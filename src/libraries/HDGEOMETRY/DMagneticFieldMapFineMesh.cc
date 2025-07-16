@@ -50,6 +50,16 @@ DMagneticFieldMapFineMesh::DMagneticFieldMapFineMesh(JCalibration *jcalib, strin
 }
 
 //---------------------------------
+// DMagneticFieldMapFineMesh    (Constructor)
+//---------------------------------
+DMagneticFieldMapFineMesh::DMagneticFieldMapFineMesh(const string& coarseMeshMsgpackFileName,	const string& fineMeshMsgpackFileName)
+: jcalib(nullptr), jresman(nullptr)
+{
+	ReadMsgpackFileCoarseMesh(coarseMeshMsgpackFileName);
+	ReadMsgpackFileFineMesh(fineMeshMsgpackFileName);
+}
+
+//---------------------------------
 // ~DMagneticFieldMapFineMesh    (Destructor)
 //---------------------------------
 DMagneticFieldMapFineMesh::~DMagneticFieldMapFineMesh()
@@ -1006,7 +1016,7 @@ void DMagneticFieldMapFineMesh::GenerateFineMesh(void){
   }
 }
 
-void DMagneticFieldMapFineMesh::WriteEvioFile(string evioFileName){
+void DMagneticFieldMapFineMesh::WriteEvioFile(const string& evioFileName) const {
   cout << "Writing fine-mesh B-field data to " << evioFileName << "..." <<endl;
 
   // Create vectors of the B-field components and gradients
@@ -1121,7 +1131,7 @@ void DMagneticFieldMapFineMesh::WriteEvioFile(string evioFileName){
 }
 
 // Read the B-field data from the evio file
-void DMagneticFieldMapFineMesh::ReadEvioFile(string evioFileName){
+void DMagneticFieldMapFineMesh::ReadEvioFile(const string& evioFileName){
 	cout << "Reading fine-mesh B-field data from "<< evioFileName << endl;
 
 	// Open EVIO file
@@ -1299,7 +1309,7 @@ void DMagneticFieldMapFineMesh::WriteMsgpackFileFineMesh(const string& msgpackFi
 
 void DMagneticFieldMapFineMesh::ReadMsgpackFileFineMesh(const string& msgpackFileName)
 {
-	cout << "Reading fine-mesh B-field data from " << msgpackFileName << endl;
+	cout << "Reading coarse-mesh B-field data from " << msgpackFileName << endl;
 	std::ifstream inFile(msgpackFileName, std::ios::binary);
 	if (not inFile) {
 		cerr << "Could not open file " << msgpackFileName << " for reading." << endl;
