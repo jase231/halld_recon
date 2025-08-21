@@ -1,0 +1,6 @@
+To manually build halld_recon:
+source setup_gluex.sh (if present, otherwise)
+source /group/halld/Software/build_scripts/gluex_env_jlab.sh /group/halld/www/halldweb/html/halld_versions/version.xml
+cd halld_recon
+scons -c
+scan-build scons -j32 install 
