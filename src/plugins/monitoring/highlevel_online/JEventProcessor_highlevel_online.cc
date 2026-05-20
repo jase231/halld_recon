@@ -13,6 +13,7 @@
 #include <DAQ/DF1TDCHit.h>
 #include <DAQ/DCODAEventInfo.h>
 #include <DAQ/DEPICSvalue.h>
+#include <DAQ/DBeamHelicity.h>
 #include <DANA/DEvent.h>
 #include <PAIR_SPECTROMETER/DPSCHit.h>
 #include <FDC/DFDCHit.h>
@@ -168,26 +169,32 @@ void JEventProcessor_highlevel_online::Init()
 	//timing cuts
 	dTimingCutMap[Gamma][SYS_BCAL] = 3.0;
 	dTimingCutMap[Gamma][SYS_FCAL] = 5.0;
+	dTimingCutMap[Gamma][SYS_ECAL] = 3.0;
 	dTimingCutMap[Proton][SYS_NULL] = -1.0;
 	dTimingCutMap[Proton][SYS_TOF] = 2.5;
 	dTimingCutMap[Proton][SYS_BCAL] = 2.5;
 	dTimingCutMap[Proton][SYS_FCAL] = 3.0;
+	dTimingCutMap[Proton][SYS_ECAL] = 3.0;
 	dTimingCutMap[PiPlus][SYS_NULL] = -1.0;
 	dTimingCutMap[PiPlus][SYS_TOF] = 2.0;
 	dTimingCutMap[PiPlus][SYS_BCAL] = 2.5;
 	dTimingCutMap[PiPlus][SYS_FCAL] = 3.0;
+	dTimingCutMap[PiPlus][SYS_ECAL] = 3.0;
 	dTimingCutMap[PiMinus][SYS_NULL] = -1.0;
 	dTimingCutMap[PiMinus][SYS_TOF] = 2.0;
 	dTimingCutMap[PiMinus][SYS_BCAL] = 2.5;
 	dTimingCutMap[PiMinus][SYS_FCAL] = 3.0;
+	dTimingCutMap[PiMinus][SYS_ECAL] = 3.0;
 	dTimingCutMap[Electron][SYS_NULL] = -1.0;
 	dTimingCutMap[Electron][SYS_TOF] = 2.0;
 	dTimingCutMap[Electron][SYS_BCAL] = 2.5;
 	dTimingCutMap[Electron][SYS_FCAL] = 3.0;
+	dTimingCutMap[Electron][SYS_ECAL] = 3.0;
 	dTimingCutMap[Positron][SYS_NULL] = -1.0;
 	dTimingCutMap[Positron][SYS_TOF] = 2.0;
 	dTimingCutMap[Positron][SYS_BCAL] = 2.5;
 	dTimingCutMap[Positron][SYS_FCAL] = 3.0;
+	dTimingCutMap[Positron][SYS_ECAL] = 3.0;
 
 	// All histograms go in the "highlevel" directory
 	TDirectory *main = gDirectory;
@@ -233,9 +240,10 @@ void JEventProcessor_highlevel_online::Init()
 	dHist_NumTriggers->GetXaxis()->SetBinLabel(33, "Total");
 
 
+	dHist_BCALVsFCAL2_TrigBit1 = new TH2I("BCALVsFCAL2_TrigBit1","TRIG BIT 1;E (FCAL2) (count);E (BCAL) (count)", 200, 0., 10000, 200, 0., 50000);
 	dHist_BCALVsFCAL_TrigBit1 = new TH2I("BCALVsFCAL_TrigBit1","TRIG BIT 1;E (FCAL) (count);E (BCAL) (count)", 200, 0., 10000, 200, 0., 50000);
-
-	dHist_CCALVsFCAL_TrigBit1 = new TH2I("CCALVsFCAL_TrigBit1","TRIG BIT 1;E (FCAL) (count);E (CCAL) (count)", 100, 0., 20000, 200, 0., 35000);
+	dHist_BCALVsECAL_TrigBit1 = new TH2I("BCALVsECAL_TrigBit1","TRIG BIT 1;E (ECAL) (count);E (BCAL) (count)", 200, 0., 10000, 200, 0., 50000);
+	dHist_ECALVsFCAL_TrigBit1 = new TH2I("ECALVsFCAL_TrigBit1","TRIG BIT 1;E (FCAL) (count);E (ECAL) (count)", 200, 0., 20000, 200, 0., 20000);
 
 	dHist_L1bits_gtp = new TH1I("L1bits_gtp", "L1 trig bits from GTP;Trig. bit (1-32)", 34, 0.5, 34.5);
 	dHist_L1bits_fp  = new TH1I("L1bits_fp", "L1 trig bits from FP;Trig. bit (1-32)", 32, 0.5, 32.5);
@@ -262,6 +270,7 @@ void JEventProcessor_highlevel_online::Init()
 
 	// Beam Energy from tagger
 	dHist_BeamEnergy = new TH1I("BeamEnergy", "Reconstructed Tagger Beam Energy;Beam Energy (GeV)", 240, 0.0, 12.0);
+	dHist_BeamEnergy_amo = new TH1I("BeamEnergy_amo", "Saved Tagger Beam Energy for AMO run;Beam Energy (GeV)", 240, 0.0, 12.0);
 
 	// Beam Energy from PS
 	dHist_PSPairEnergy = new TH1I("PSPairEnergy", "Reconstructed PS Beam Energy;Beam Energy (GeV)", 450, 3., 12.);
@@ -275,10 +284,16 @@ void JEventProcessor_highlevel_online::Init()
 	/*************************************************************** VERTEX ***************************************************************/
 
 	// Event Vertex-Z
-	dEventVertexZ = new TH1I("EventVertexZ", "Reconstructed Event Vertex Z;Event Vertex-Z (cm)", 600, -100.0, 200.0);
+	dEventVertexZ = new TH1I("EventVertexZ", "Event Vertex (R < 1 cm);Event Vertex Z (cm)", 750, 0.0, 150.0);
 
 	// Event Vertex-Y Vs Vertex-X
-	dEventVertexYVsX = new TH2I("EventVertexYVsX", "Reconstructed Event Vertex X/Y;Event Vertex-X (cm);Event Vertex-Y (cm)", 400, -10.0, 10.0, 400, -10.0, 10.0);
+	dEventVertexYVsX = new TH2I("EventVertexYVsX", "Event Vertex in Target (50 < Z < 80);Event Vertex X (cm);Event Vertex Y (cm)", 400, -4.0, 4.0, 400, -4.0, 4.0);
+
+	// Event Vertex-X Vs Vertex-Z
+	dEventVertexXVsZ = new TH2I("EventVertexXVsZ", "Event Vertex in Target (|Y| < 2 cm);Event Vertex Z (cm);Event Vertex X (cm)", 200, 48, 88, 150, -1.5, 1.5);
+
+	// Event Vertex-Y Vs Vertex-Z
+	dEventVertexYVsZ = new TH2I("EventVertexYVsZ", "Event Vertex in Target (|X| < 2 cm);Event Vertex Z (cm);Event Vertex Y (cm)", 200, 48, 88, 150, -1.5, 1.5);
 
 	/*************************************************************** 2 gamma inv. mass ***************************************************************/
 	// 2-gamma inv. mass
@@ -303,6 +318,24 @@ void JEventProcessor_highlevel_online::Init()
 	else
 	  sprintf(str, "K^{+}K^{-} inv. mass w/o reconstructed recoil;K^{+}K^{-} inv. mass (GeV)");
 	dKp_Km = new TH1I("KPlusKMinus", str, 400, 0.0, 2.0);
+
+	// K+ Lambda
+	if (isExclusive)
+	  sprintf(str, "#pi^{-}p inv. mass w/ identified K^{+};#pi^{-}p inv. mass (GeV)");
+	else
+	  sprintf(str, "#pi^{-}p inv. mass w/o reconstructed recoil;#pi^{-}p inv. mass (GeV)");
+	dpim_proton = new TH1I("PiMinusProton", str, 100, 1.0, 1.5);
+
+	// K0 Lambda (from neutron)
+	if (isExclusive)
+	  sprintf(str, "#pi^{-}p inv. mass w/ identified K^{0};#pi^{-}p inv. mass (GeV)");
+	else
+	  sprintf(str, "#pi^{-}p inv. mass w/o reconstructed recoil;#pi^{-}p inv. mass (GeV)");
+	dpim_proton_Kshort = new TH1I("PiMinusProton_Kshort", str, 100, 1.0, 1.5);
+	sprintf(str, "#pi^{+}#pi^{-} inv. mass;#pi^{+}#pi^{-} inv. mass (GeV)");
+	dKshort = new TH1I("Kshort", str, 100, 0.2, 1.2);
+	sprintf(str, "inv. mass;#pi^{-}p inv. mass (GeV);#pi^{+}#pi^{-} inv. mass (GeV)");
+	dpim_proton_pippim = new TH2I("PiMinusProton_PiPlusPiMinus", str, 100, 1.0, 1.5, 100, 0.2, 1.2);
 
 	// pi+ pi- pi0
 	if (isExclusive)
@@ -358,6 +391,9 @@ void JEventProcessor_highlevel_online::Init()
 		dF1TDC_fADC_tdiff->GetXaxis()->SetBinLabel(jbin+1, str);
 	}
 	
+	/*************************************************************** Helicity ***************************************************************/
+
+	dHist_heli_asym_gtp = new TH2I("Heli_asym_gtp", "Helicity Asymmetry per Trigger bit from GTP; Trig. bit (1-32); Helicity Asymmetry ", 34, 0.5, 34.5, 2, -0.5, 1.5);
 
 	// back to main dir
 	main->cd();
@@ -378,14 +414,28 @@ void JEventProcessor_highlevel_online::BeginRun(const std::shared_ptr<const JEve
 	if(DEvent::GetCalib(event, "/PHOTON_BEAM/coherent_energy", photon_beam_param) == false)
 		dCoherentPeakRange = pair<double, double>(photon_beam_param["cohmin_energy"], photon_beam_param["cohedge_energy"]);
 
+	vector<int> locAmoNorm;
+	GetCalib(event, "PHOTON_BEAM/amo_norm", locAmoNorm);
+	for(size_t loc_i = 0; loc_i < locAmoNorm.size(); ++loc_i){
+	  dHist_BeamEnergy_amo->SetBinContent(loc_i+1, locAmoNorm[loc_i]);
+	}
+
 	fcal_cell_thr  =  65;
 	bcal_cell_thr  =  20;
-	ccal_cell_thr  =  30;
+	ecal_cell_thr  =  35;
 
-	fcal_row_mask_min = 26;
-	fcal_row_mask_max = 32;
-	fcal_col_mask_min = 26;
-	fcal_col_mask_max = 32;
+	ecal_row_mask_min = 15;
+	ecal_row_mask_max = 24;
+	ecal_col_mask_min = 15;
+	ecal_col_mask_max = 24;
+	
+	if( event->GetRunNumber() < 130000 )
+	{
+		fcal_row_mask_min = 26;
+		fcal_row_mask_max = 32;
+		fcal_col_mask_min = 26;
+		fcal_col_mask_max = 32;
+	}
 
 	if( event->GetRunNumber() < 11127 )
 	{
@@ -437,8 +487,8 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 	vector<const DBCALDigiHit*> locBCALDigiHits;
 	locEvent->Get(locBCALDigiHits);
         
-	vector<const DCCALDigiHit*> locCCALDigiHits;
-	locEvent->Get(locCCALDigiHits);
+	vector<const DECALDigiHit*> locECALDigiHits;
+	locEvent->Get(locECALDigiHits);
 
         // BCAL LED Pseudo Trigger//
         vector<const DBCALHit*> locdbcalhits;
@@ -471,6 +521,9 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 
 	vector<const DChargedTrack*> locChargedTracks;
 	locEvent->Get(locChargedTracks, "PreSelect");
+
+	std::vector<const DBeamHelicity*> locBeamHelicities;
+	locEvent->Get(locBeamHelicities, "CORRECTED");
 
 	// The following declares containers for all types in F1Types
 	// (defined at top of this file) and fills them.
@@ -615,15 +668,15 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 	  
 	  if( ((int32_t)fcal_hit->pulse_peak-100) <= fcal_cell_thr) continue;
 	  
-	  uint32_t adc_time = (fcal_hit->pulse_time >> 6) & 0x1FF; // consider only course time
-	  if((adc_time < 15) || (adc_time > 50)) continue; // changed from 20 and 70 based on run 30284  2/5/2017 DL
+	  // uint32_t adc_time = (fcal_hit->pulse_time >> 6) & 0x1FF; // consider only course time
+	  // if((adc_time < 15) || (adc_time > 50)) continue; // changed from 20 and 70 based on run 30284  2/5/2017 DL
 	  
 	  Int_t pulse_int = fcal_hit->pulse_integral - fcal_hit->nsamples_integral*100;
 	  if(pulse_int < 0) continue;
 	  fcal_tot_en += pulse_int;
 	}
 	
-	//Get total BCAL energy
+	//Get total BCAL energy 
 	int bcal_tot_en = 0;
 	for(auto bcal_hit : locBCALDigiHits){
 		if( ((int32_t)bcal_hit->pulse_peak-100) <= bcal_cell_thr) continue;
@@ -632,13 +685,20 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 		bcal_tot_en += pulse_int;
 	}
 
-	//Get total CCAL energy
-	int ccal_tot_en = 0;
-	for(auto ccal_hit : locCCALDigiHits){
-	  if( ((int32_t)ccal_hit->pulse_peak-100) <= ccal_cell_thr) continue;
-	  Int_t pulse_int = ccal_hit->pulse_integral - ccal_hit->nsamples_integral*100;
-	  if(pulse_int < 0) continue;
-	  ccal_tot_en += pulse_int;
+	//Get total ECAL energy
+	int ecal_tot_en = 0;
+	for(auto ecal_hit : locECALDigiHits){
+		int row = ecal_hit->row;
+		int col = ecal_hit->column;
+		
+		if( (row >= ecal_row_mask_min) && (row <= ecal_row_mask_max) ){
+			if( (col >= ecal_col_mask_min) && (col <= ecal_col_mask_max) ) continue;
+		}
+		
+		if( ((int32_t)ecal_hit->pulse_peak-100) <= ecal_cell_thr) continue;
+		Int_t pulse_int = ecal_hit->pulse_integral - ecal_hit->nsamples_integral*100;
+		if(pulse_int < 0) continue;
+		ecal_tot_en += pulse_int;
 	}
 
 	
@@ -769,8 +829,10 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 	  
 		if(locgtpTrigBits[0] == 1) //bit 1
                   {
-                    dHist_BCALVsFCAL_TrigBit1->Fill(Float_t(fcal_tot_en), Float_t(bcal_tot_en));
-                    dHist_CCALVsFCAL_TrigBit1->Fill(Float_t(fcal_tot_en), Float_t(ccal_tot_en));
+		    dHist_BCALVsFCAL2_TrigBit1->Fill(0.4957*Float_t(fcal_tot_en)+Float_t(ecal_tot_en), Float_t(bcal_tot_en));
+		    dHist_BCALVsFCAL_TrigBit1->Fill(0.4957*Float_t(fcal_tot_en), Float_t(bcal_tot_en));
+		    dHist_BCALVsECAL_TrigBit1->Fill(Float_t(ecal_tot_en), Float_t(bcal_tot_en));
+                    dHist_ECALVsFCAL_TrigBit1->Fill(0.4957*Float_t(fcal_tot_en), Float_t(ecal_tot_en));
                   }
 
 		// trigger bits
@@ -939,8 +1001,17 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 	
 	if(locChargedTracks.size() >= 2)
 	{
-		dEventVertexZ->Fill(locVertex->dSpacetimeVertex.Z());
-		dEventVertexYVsX->Fill(locVertex->dSpacetimeVertex.X(), locVertex->dSpacetimeVertex.Y());
+		float vertX = locVertex->dSpacetimeVertex.X();
+		float vertY = locVertex->dSpacetimeVertex.Y();
+		float vertZ = locVertex->dSpacetimeVertex.Z();
+		if (sqrt(vertX*vertX + vertY*vertY) < 1)
+			dEventVertexZ->Fill(locVertex->dSpacetimeVertex.Z());
+		if (vertZ<80 && vertZ>50)
+			dEventVertexYVsX->Fill(vertX, vertY);
+		if (vertY<2 && vertY>-2)
+			dEventVertexXVsZ->Fill(vertZ, vertX);
+		if (vertX<2 && vertX>-2)
+			dEventVertexYVsZ->Fill(vertZ, vertY);
 	}
 	
 	/*************************************************************** 2 gamma inv. mass ***************************************************************/
@@ -1160,7 +1231,168 @@ void JEventProcessor_highlevel_online::Process(const std::shared_ptr<const JEven
 			  }
 		}
 	}
+	/*************************************************************** K+ Lambda ***************************************************************/
 
+	for(auto t1 : locChargedTracks){
+		//look for proton
+		auto hypoth1 = t1->Get_Hypothesis(Proton);
+		if(!hypoth1) continue;
+
+		//timing cut
+		auto detector1 = hypoth1->t1_detector();
+		double locDeltaT = hypoth1->time() - hypoth1->t0();
+		if(fabs(locDeltaT) > dTimingCutMap[Proton][detector1]) // use same timing cuts as pion
+			continue;
+
+		const DLorentzVector &Protonmom = hypoth1->lorentzMomentum();
+
+		for(auto t2 : locChargedTracks){
+			if(t2 == t1) continue;
+
+			//look for pi-
+			auto hypoth2 = t2->Get_Hypothesis(PiMinus);
+			if(!hypoth2) continue;
+
+			//timing cut
+			auto detector2 = hypoth2->t1_detector();
+			locDeltaT = hypoth2->time() - hypoth2->t0();
+			if(fabs(locDeltaT) > dTimingCutMap[PiMinus][detector2]) // use same timing cuts as pion
+				continue;
+
+			const DLorentzVector &PiMinusmom = hypoth2->lorentzMomentum();
+			DLorentzVector LambdaP4(Protonmom + PiMinusmom);
+
+			for(auto locBeamPhoton : locBeamPhotons_InTime)
+			  {
+			    //for exclusive phi: require at least one beam photon in time with missing mass squared near 0
+			    if (isExclusive){
+			      for(auto t3 : locChargedTracks){
+				if(t3 == t1) continue;
+				if(t3 == t2) continue;
+
+				//look for K+
+				auto hypoth3 = t3->Get_Hypothesis(KPlus);
+				if(!hypoth3) continue;
+
+				//timing cut
+				auto detector3 = hypoth3->t1_detector();
+				locDeltaT = hypoth3->time() - hypoth3->t0();
+				if(fabs(locDeltaT) > dTimingCutMap[PiPlus][detector3])
+				  continue;
+
+				const DLorentzVector &KPlusmom = hypoth3->lorentzMomentum();
+
+				DLorentzVector locTargetP4(0.0, 0.0, 0.0, ParticleMass(Proton));
+				DLorentzVector locMissingP4 = locBeamPhoton->lorentzMomentum() + locTargetP4 - LambdaP4 - KPlusmom;
+				if(fabs(locMissingP4.M2()) > 0.01)
+				  continue;
+				dpim_proton->Fill(LambdaP4.M());
+				break;
+			      }
+			    }
+			  }
+		}
+	}
+	/*************************************************************** Kshort Lambda from neutron *******************************************************/
+
+	for(auto t1 : locChargedTracks){
+		//look for proton
+		auto hypoth1 = t1->Get_Hypothesis(Proton);
+		if(!hypoth1) continue;
+
+		//timing cut
+		auto detector1 = hypoth1->t1_detector();
+		double locDeltaT = hypoth1->time() - hypoth1->t0();
+		if(fabs(locDeltaT) > dTimingCutMap[Proton][detector1])
+			continue;
+
+		const DLorentzVector &Protonmom = hypoth1->lorentzMomentum();
+
+		for(auto t2 : locChargedTracks){
+			if(t2 == t1) continue;
+
+			//look for pi-
+			auto hypoth2 = t2->Get_Hypothesis(PiMinus);
+			if(!hypoth2) continue;
+
+			//timing cut
+			auto detector2 = hypoth2->t1_detector();
+			locDeltaT = hypoth2->time() - hypoth2->t0();
+			if(fabs(locDeltaT) > dTimingCutMap[PiMinus][detector2])
+				continue;
+
+			const DLorentzVector &PiMinusmom = hypoth2->lorentzMomentum();
+			DLorentzVector LambdaP4(Protonmom + PiMinusmom);
+
+			for(auto locBeamPhoton : locBeamPhotons_InTime)
+			  {
+			    //for exclusive phi: require at least one beam photon in time with missing mass squared near 0
+			    if (isExclusive){
+			      for(auto t3 : locChargedTracks){
+				if(t3 == t1) continue;
+				if(t3 == t2) continue;
+
+				//look for Pi+ from kshort
+				auto hypoth3 = t3->Get_Hypothesis(PiPlus);
+				if(!hypoth3) continue;
+
+				//timing cut
+				auto detector3 = hypoth3->t1_detector();
+				locDeltaT = hypoth3->time() - hypoth3->t0();
+				if(fabs(locDeltaT) > dTimingCutMap[PiPlus][detector3])
+				  continue;
+
+				const DLorentzVector &KSPiPlusmom = hypoth3->lorentzMomentum();
+
+				for(auto t4 : locChargedTracks){
+				    if(t4 == t1) continue;
+				    if(t4 == t2) continue;
+				    if(t4 == t3) continue;
+
+				    //look for Pi- from kshort
+				    auto hypoth4 = t4->Get_Hypothesis(PiMinus);
+				    if(!hypoth4) continue;
+
+				    //timing cut
+				    auto detector4 = hypoth4->t1_detector();
+				    locDeltaT = hypoth4->time() - hypoth4->t0();
+				    if(fabs(locDeltaT) > dTimingCutMap[PiMinus][detector4])
+				      continue;
+
+				    const DLorentzVector &KSPiMinusmom = hypoth4->lorentzMomentum();
+
+				    DLorentzVector locKShortP4(KSPiPlusmom + KSPiMinusmom);
+				    DLorentzVector LambdaP4(Protonmom + PiMinusmom);
+				    DLorentzVector locTargetP4(0.0, 0.0, 0.0, ParticleMass(Proton));
+				    DLorentzVector locMissingP4 = locBeamPhoton->lorentzMomentum() + locTargetP4 - LambdaP4 - locKShortP4;
+				    if(fabs(locMissingP4.M2()) > 0.01)
+				      continue;
+				    dKshort->Fill(locKShortP4.M());
+				    dpim_proton_pippim->Fill(LambdaP4.M(),locKShortP4.M());
+				    // loose cut on Kshort mass
+				    if(locKShortP4.M()<0.4 || locKShortP4.M()>0.6)
+				      continue;
+				    dpim_proton_Kshort->Fill(LambdaP4.M());
+				    break;
+				}
+			      }
+			    }
+			  }
+		}
+	}
+	/*************************************************************** Helicity ***************************************************************/
+
+
+	// Save helicity by trigger bit
+	for (size_t i=0; i < locBeamHelicities.size(); ++i)
+	  {
+	    for(int locTriggerBit = 1; locTriggerBit <= 32; ++locTriggerBit)
+	      {
+		if(locgtpTrigBits[locTriggerBit - 1])
+		  if (locBeamHelicities[i]->valid)
+		    dHist_heli_asym_gtp->Fill(locTriggerBit, locBeamHelicities[i]->helicity);
+	      }
+	  }
 
 	lockService->RootFillUnLock(this); //RELEASE ROOT FILL LOCK
 }

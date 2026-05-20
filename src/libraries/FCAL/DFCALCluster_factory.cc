@@ -49,6 +49,7 @@ void DFCALCluster_factory::Init()
 	TIME_CUT = 15.0 ; //ns
 	MAX_HITS_FOR_CLUSTERING = 250;
 	REMOVE_BAD_BLOCK = 0;
+	CORRECT_SIMU_HIT_ENERGY = 0;
 	
 	auto app = GetApplication();
 	app->SetDefaultParameter("FCAL:MIN_CLUSTER_BLOCK_COUNT", MIN_CLUSTER_BLOCK_COUNT);
@@ -56,6 +57,7 @@ void DFCALCluster_factory::Init()
 	app->SetDefaultParameter("FCAL:MAX_HITS_FOR_CLUSTERING", MAX_HITS_FOR_CLUSTERING);
 	app->SetDefaultParameter("FCAL:TIME_CUT",TIME_CUT,"time cut for associating FCAL hits together into a cluster");
 	app->SetDefaultParameter("FCAL:REMOVE_BAD_BLOCK",REMOVE_BAD_BLOCK,"remove bad block");
+	app->SetDefaultParameter("FCAL:CORRECT_SIMU_HIT_ENERGY",CORRECT_SIMU_HIT_ENERGY,"correct the simu hit energy");
 }
 
 //------------------
@@ -110,7 +112,7 @@ void DFCALCluster_factory::Process(const std::shared_ptr<const JEvent>& event)
 
 	// fill user's hit list
         int nhits = 0;
-	oid_t id=1;
+	//oid_t id=1;
         DFCALCluster::userhits_t* hits = 
 	  (DFCALCluster::userhits_t*) malloc(sizeof(DFCALCluster::userhits_t)*FCAL_USER_HITS_MAX);
 
@@ -123,11 +125,16 @@ void DFCALCluster_factory::Process(const std::shared_ptr<const JEvent>& event)
 	       bad_blocks_list.size() > 0 &&
 	       0 <= fcalGeom->channel( (**hit).row, (**hit).column ) && fcalGeom->channel( (**hit).row, (**hit).column ) <= 2799 &&
 	       bad_blocks_list[fcalGeom->channel( (**hit).row, (**hit).column )] == 1) continue;
-           hits->hit[nhits].id = id++;
+           //hits->hit[nhits].id = id++;
+           hits->hit[nhits].id = (**hit).id;
 	   hits->hit[nhits].ch = fcalGeom->channel( (**hit).row, (**hit).column );
            hits->hit[nhits].x = (**hit).x;
            hits->hit[nhits].y = (**hit).y;
-           hits->hit[nhits].E = (**hit).E; 
+	   if (CORRECT_SIMU_HIT_ENERGY > 0)
+	     hits->hit[nhits].E = (**hit).E * CORRECT_SIMU_HIT_ENERGY;
+	   else
+	     hits->hit[nhits].E = (**hit).E;
+           //hits->hit[nhits].E = (**hit).E; 
            hits->hit[nhits].t = (**hit).t;
 	   hits->hit[nhits].intOverPeak = (**hit).intOverPeak;
            nhits++;
@@ -263,8 +270,9 @@ void DFCALCluster_factory::Process(const std::shared_ptr<const JEvent>& event)
               const vector<DFCALCluster::DFCALClusterHit_t> &clusterHits = clusterList[c]->GetHits();
               for(size_t loc_i = 0; loc_i < clusterHits.size(); loc_i++) {
                   const DFCALHit *clusterHit = GetDFCALHitFromClusterHit(clusterHits[loc_i], fcalhits);
-                  if( clusterHit != NULL )
+                  if( clusterHit != NULL ) {
                       clusterList[c]->AddAssociatedObject( clusterHit );
+                    }
               }
 
               Insert( clusterList[c] );

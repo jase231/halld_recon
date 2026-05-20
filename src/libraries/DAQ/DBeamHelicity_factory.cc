@@ -16,6 +16,7 @@ using namespace std;
 #include <DAQ/DHELIDigiHit.h>
 #include <DAQ/DHelicityData.h>
 #include <DAQ/DEPICSvalue.h>
+#include "DANA/DEvent.h"
 #include "DBeamHelicity_factory.h"
 
 //init static class variable
@@ -27,6 +28,12 @@ int DBeamHelicity_factory::dBeamOn = 1;
 //------------------
 void DBeamHelicity_factory::Init()
 {
+	PREFER_PROMPT_HELICITY_DATA = true;
+	
+	auto app = GetApplication();
+	app->SetDefaultParameter("PREFER_PROMPT_HELICITY_DATA", PREFER_PROMPT_HELICITY_DATA, "If both prompt and delayed helicity data are in the data stream, prefer the prompt. (default: true)");
+	app->SetDefaultParameter("HELICITY:HB_SHIFT", dHDBoardDelay, "Helicity board bits to shift to get prompt helicity. (default: 8)");
+	app->SetDefaultParameter("HELICITY:REJECT_TSETTLE", REJECT_TSETTLE, "Reject events when the helicity is changing (t_settle is on). (default: 1)");
 
 	return; //NOERROR;
 }
@@ -38,9 +45,19 @@ void DBeamHelicity_factory::BeginRun(const std::shared_ptr<const JEvent>& event)
 {
 
 	// Grab information from CCDB tables here
+	dHDBoardDelay = 8;
 
-	// Constants for determined helicity pattern (from Ken) 
+    map<string,double> shift_factors;
 
+    if (DEvent::GetCalib(event, "/ELECTRON_BEAM/helicity_board_shift", shift_factors))
+        jout << "Error loading /ELECTRON_BEAM/helicity_board_shift !" << jendl;
+    if (shift_factors.find("shift") != shift_factors.end()) {
+        dHDBoardDelay = shift_factors["shift"];
+    } else {
+        jerr << "Unable to get correction from /ELECTRON_BEAM/helicity_board_shift !" << endl;
+	}
+	// Constants for determined helicity pattern? (from Ken) 
+	
 	return; //NOERROR;
 }
 
@@ -78,7 +95,7 @@ void DBeamHelicity_factory::Process(const std::shared_ptr<const JEvent>& event){
   
   DBeamHelicity *locBeamHelicity = nullptr;
   
-  // get helicity bits from fADC (only for 2023 data)
+  // get helicity bits from fADC for delayed helicity signal
   vector<const DHELIDigiHit*> locHELIDigiHits;
   event->Get(locHELIDigiHits);
 
@@ -89,20 +106,22 @@ void DBeamHelicity_factory::Process(const std::shared_ptr<const JEvent>& event){
   if(locHELIDigiHits.empty() && locHelicityDatas.empty())
     return;
 
-  if(!locHELIDigiHits.empty() && !locHelicityDatas.empty()) {
-  	jerr << "both DHELIDigiHit and DHelicityData objects are in the data stream???" << endl;
-  	jerr << "  not sure what to do, not creating DBeamHelicity objects ... " << endl;
-  } 
 
   // make the object depending on which data type we have
-  if(!locHELIDigiHits.empty())
-  	locBeamHelicity = Make_DBeamHelicity(locHELIDigiHits);
-  
-  if(!locHelicityDatas.empty())
+  if(!locHelicityDatas.empty() && PREFER_PROMPT_HELICITY_DATA) {
   	locBeamHelicity = Make_DBeamHelicity(locHelicityDatas[0]);
+  } else {
+    if(!locHELIDigiHits.empty())
+  	  locBeamHelicity = Make_DBeamHelicity(locHELIDigiHits);
+  }
   
-
   if(locBeamHelicity == nullptr)  return;
+
+  // perform optional event selections 
+  if(REJECT_TSETTLE && (locBeamHelicity->t_settle==0)) {
+	locBeamHelicity->valid = false;
+  }
+  
   
   Insert(locBeamHelicity);
   
@@ -142,10 +161,17 @@ DBeamHelicity *DBeamHelicity_factory::Make_DBeamHelicity(vector<const DHELIDigiH
 //------------------
 DBeamHelicity *DBeamHelicity_factory::Make_DBeamHelicity(const DHelicityData *locHelicityData)
 {
+	if(!checkPredictor(locHelicityData->last_helicity_state_pattern_sync)) {
+		jerr << "Consistency check of Helicity Decoder Board data failed!" << endl;
+		reportPredictorError(locHelicityData->last_helicity_state_pattern_sync);
+		return nullptr;
+	}
+
 	DBeamHelicity *locBeamHelicity = new DBeamHelicity;
 	locBeamHelicity->pattern_sync  = locHelicityData->trigger_pattern_sync;
+	//locBeamHelicity->t_settle      = !(locHelicityData->trigger_tstable);
 	locBeamHelicity->t_settle      = locHelicityData->trigger_tstable;
-	locBeamHelicity->helicity      = locHelicityData->trigger_helicity_state;
+	locBeamHelicity->helicity      = helicityDecoderCalcPolarity(locHelicityData->trigger_event_polarity, locHelicityData->helicity_seed, dHDBoardDelay);
 	locBeamHelicity->pair_sync     = locHelicityData->trigger_pair_sync;
 	locBeamHelicity->ihwp          = dIHWP;
 	locBeamHelicity->beam_on       = dBeamOn;
@@ -154,6 +180,56 @@ DBeamHelicity *DBeamHelicity_factory::Make_DBeamHelicity(const DHelicityData *lo
 	return locBeamHelicity;
 }
 
+//------------------
+// advanceSeed
+//------------------
+uint32_t DBeamHelicity_factory::advanceSeed(uint32_t seed) const
+{
+    const uint32_t bit7  = (seed & 0x00000040) != 0;
+    const uint32_t bit28 = (seed & 0x08000000) != 0;
+    const uint32_t bit29 = (seed & 0x10000000) != 0;
+    const uint32_t bit30 = (seed & 0x20000000) != 0;
+    const uint32_t newbit = (bit30 ^ bit29 ^ bit28 ^ bit7) & 0x1;
+    return (newbit | (seed << 1)) & 0x3FFFFFFF;
+}
+
+//------------------
+// helicityDecoderCalcPolarity
+//------------------
+ uint32_t DBeamHelicity_factory::helicityDecoderCalcPolarity(uint32_t event_polarity, uint32_t seed, uint32_t delay)
+{
+    for (uint32_t i = 0; i < delay; ++i)
+        seed = advanceSeed(seed);
+    return (seed ^ event_polarity) & 0x01;
+
+}
+
+//------------------
+// checkPredictor
+//------------------
+bool DBeamHelicity_factory::checkPredictor(uint32_t testval) const
+{
+	UInt_t rval = (testval)&0x3fffffff;
+	UInt_t lval = (testval>>2)&0x3fffffff;
+	lval = advanceSeed(lval);
+	lval = advanceSeed(lval);
+	
+	return (rval == lval);
+}
+
+//------------------
+// reportPredictorError
+//------------------
+void DBeamHelicity_factory::reportPredictorError(uint32_t testval) const
+{
+	UInt_t rval = (testval)&0x3fffffff;
+	UInt_t lval = (testval>>2)&0x3fffffff;
+	lval = advanceSeed(lval);
+	lval = advanceSeed(lval);
+	
+ 	jerr << "  Bad word: 0x" << hex << testval << endl;
+ 	jerr << "     Compare 0x" << rval << " to 0x" << lval << dec << endl;
+}
 
 //------------------
 // EndRun

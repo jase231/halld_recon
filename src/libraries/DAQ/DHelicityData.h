@@ -21,8 +21,7 @@ class DHelicityData:public DDAQAddress{
 		JOBJECT_PUBLIC(DHelicityData);
 
 		DHelicityData(uint32_t rocid=0, uint32_t slot=0, uint32_t channel=0, uint32_t itrigger=0 
-			, uint32_t expected_helicity_state=0
-			, uint32_t recovered_helicity_seed=0
+			, uint32_t helicity_seed=0
 			, uint32_t falling_edge_tstable_count=0
 			, uint32_t rising_edge_tstable_count=0
 			, uint32_t pattern_sync_count=0
@@ -43,8 +42,7 @@ class DHelicityData:public DDAQAddress{
 			, uint32_t last_helicity_state=0
 			, uint32_t last_helicity_state_pattern_sync=0)
 			:DDAQAddress(rocid, slot, channel, itrigger)
-			, expected_helicity_state(expected_helicity_state)
-			, recovered_helicity_seed(recovered_helicity_seed)
+			, helicity_seed(helicity_seed)
 			, falling_edge_tstable_count(falling_edge_tstable_count)
 			, rising_edge_tstable_count(rising_edge_tstable_count)
 			, pattern_sync_count(pattern_sync_count)
@@ -66,8 +64,7 @@ class DHelicityData:public DDAQAddress{
 			, last_helicity_state_pattern_sync(last_helicity_state_pattern_sync) {}
 
 		// data
-		uint32_t expected_helicity_state;
-		uint32_t recovered_helicity_seed;
+		uint32_t helicity_seed;
 		uint32_t falling_edge_tstable_count;
 		uint32_t rising_edge_tstable_count;
 		uint32_t pattern_sync_count;
@@ -93,10 +90,12 @@ class DHelicityData:public DDAQAddress{
 		// the second argument to AddString is printf style format
 		void Summarize(JObjectSummary& summary) const override {
 			DDAQAddress::Summarize(summary);
-			summary.add(expected_helicity_state, NAME_OF(expected_helicity_state), "%d");
-			summary.add(pattern_sync_count, NAME_OF(pattern_sync_count), "%d");
-			summary.add(pair_sync_count, NAME_OF(pair_sync_count), "%d");
-			summary.add(time_from_start_tstable, NAME_OF(time_from_start_tstable), "%d");
+			summary.add(trigger_helicity_state, NAME_OF(trigger_helicity_state), "%d");
+			summary.add(trigger_tstable, NAME_OF(trigger_tstable), "%d");
+			summary.add(trigger_pattern_sync, NAME_OF(trigger_pattern_sync), "%d");
+			summary.add(trigger_pair_sync, NAME_OF(trigger_pair_sync), "%d");
+			summary.add(trigger_helicity_state_pattern_start, NAME_OF(trigger_helicity_state_pattern_start), "%d");
+			summary.add(trigger_event_polarity, NAME_OF(trigger_event_polarity), "%d");
 		}
 
 };

@@ -608,6 +608,10 @@ def AddHDDS(env):
 # HDDM
 ##################################
 def AddHDDM(env):
+	hddm_dir = os.getenv('HDDM_DIR', 'hddm')
+	env.AppendUnique(CPPPATH = ["%s/include" % (hddm_dir)])
+	env.AppendUnique(CPPPATH = ["%s/include/xrootd" % (hddm_dir)])
+	env.AppendUnique(LIBPATH = ["%s/lib" % (hddm_dir)])
 	env.AppendUnique(LIBS = 'HDDM')
 	env.PrependUnique(OPTIONAL_PLUGIN_LIBS = 'HDDM')
 	Add_xstream(env)
@@ -670,8 +674,10 @@ def Add_HDF5(env):
 		env.AppendUnique(CPPPATH = HDF5_CPPPATH)
 		HDF5_LIBPATH = ["%s/lib" % (hdf5_root)]
 		env.AppendUnique(LIBPATH = HDF5_LIBPATH)
-		env.AppendUnique(LIBS=['hdf5_cpp', 'hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
-		env.AppendUnique(OPTIONAL_PLUGIN_LIBS = ['hdf5_cpp', 'hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
+		#env.AppendUnique(LIBS=['hdf5_cpp', 'hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
+		env.AppendUnique(LIBS=['hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
+		#env.AppendUnique(OPTIONAL_PLUGIN_LIBS = ['hdf5_cpp', 'hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
+		env.AppendUnique(OPTIONAL_PLUGIN_LIBS = ['hdf5_hl', 'hdf5', 'sz', 'z', 'dl'])
 		env.AppendUnique(CXXFLAGS = ['-DHDF5_SUPPORT'])
 
 ##################################

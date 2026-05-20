@@ -33,9 +33,10 @@ private:
   void FitLine(const vector<const DTRDPoint *>&points,
 	       double &x0,double &y0,double &tx,double &ty,
 	       double &var_x,double &var_y,double &var_tx,double &var_ty) const;
-  
+         
   double dTRDz;
   int DEBUG_LEVEL;
+  bool INSTALLED;
 };
 
 #endif // DFACTORY_DTRDSEGMENT_H
