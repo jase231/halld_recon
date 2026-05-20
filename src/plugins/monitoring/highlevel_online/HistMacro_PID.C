@@ -2,7 +2,6 @@
 // hnamepath: /highlevel/TwoGammaMass
 // hnamepath: /highlevel/PiPlusPiMinus
 // hnamepath: /highlevel/KPlusKMinus
-// hnamepath: /highlevel/PiMinusProton
 // hnamepath: /highlevel/PiPlusPiMinusPiZero
 // hnamepath: /highlevel/L1bits_gtp
 // hnamepath: /highlevel/PSPairEnergy
@@ -518,8 +517,6 @@ class FitWrapper{
 	TH1* TwoGammaMass        = (TH1*)gDirectory->Get("TwoGammaMass");
 	TH1* PiPlusPiMinus       = (TH1*)gDirectory->Get("PiPlusPiMinus");
 	TH1* KPlusKMinus         = (TH1*)gDirectory->Get("KPlusKMinus");
-	TH1* PiMinusProton       = (TH1*)gDirectory->Get("PiMinusProton");
-	TH1* PiMinusProton_Kshort = (TH1*)gDirectory->Get("PiMinusProton_Kshort");
 	TH1* PiPlusPiMinusPiZero = (TH1*)gDirectory->Get("PiPlusPiMinusPiZero");
 	TH1* L1bits_gtp          = (TH1*)gDirectory->Get("L1bits_gtp");
 	TH1* PSPairEnergy        = (TH1*)gDirectory->Get("PSPairEnergy");
@@ -532,12 +529,10 @@ class FitWrapper{
 		NORM_pi0_trig = 1,
 		NORM_rho_trig,
 		NORM_phi_trig,
-		NORM_lambda_trig,
 		NORM_omega_trig,
 		NORM_pi0_ps,
 		NORM_rho_ps,
 		NORM_phi_ps,
-		NORM_lambda_ps,
 		NORM_omega_ps,
 		NORM_NUM
 	};
@@ -547,12 +542,10 @@ class FitWrapper{
 	double Ntrig_tot_rho   = PIDNorms->GetBinContent(NORM_rho_trig);
 	double Ntrig_tot_phi   = PIDNorms->GetBinContent(NORM_phi_trig);
 	double Ntrig_tot_omega = PIDNorms->GetBinContent(NORM_omega_trig);
-	double Ntrig_tot_lambda = PIDNorms->GetBinContent(NORM_lambda_trig);
 	double Nps_pi0         = PIDNorms->GetBinContent(NORM_pi0_trig);
 	double Nps_rho         = PIDNorms->GetBinContent(NORM_rho_ps);
 	double Nps_phi         = PIDNorms->GetBinContent(NORM_phi_ps);
 	double Nps_omega       = PIDNorms->GetBinContent(NORM_omega_ps);
-	double Nps_lambda      = PIDNorms->GetBinContent(NORM_lambda_ps);
 	//Get/Make Canvas
 	TCanvas *locCanvas = NULL;
 	if(TVirtualPad::Pad() == NULL)
