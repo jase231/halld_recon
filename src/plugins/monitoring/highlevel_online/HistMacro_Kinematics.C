@@ -65,16 +65,18 @@
 		locHist_PSPairEnergy->GetXaxis()->SetLabelSize(0.05);
 		locHist_PSPairEnergy->GetYaxis()->SetLabelSize(0.05);
 		// GlueX
-		locHist_PSPairEnergy->GetXaxis()->SetRangeUser(6.,12.);
+		//locHist_PSPairEnergy->GetXaxis()->SetRangeUser(6.,12.);
 		// CPP
 		// locHist_PSPairEnergy->GetXaxis()->SetRangeUser(3.5,8.5);
+		// Low Energy
+                locHist_PSPairEnergy->GetXaxis()->SetRangeUser(0.7,1.5);
 		locHist_PSPairEnergy->SetStats(0);
 		locHist_PSPairEnergy->Draw();
 		
 		double Epeak = locHist_PSPairEnergy->GetBinCenter(locHist_PSPairEnergy->GetMaximumBin());
 
 		sprintf(str, "Epeak: %3.2f GeV", Epeak);
-		latex.DrawLatex(9.5, locHist_PSPairEnergy->GetMaximum()*0.85, str);
+		latex.DrawLatex(1.15, locHist_PSPairEnergy->GetMaximum()*0.85, str);
 	}
 
 	//------------ Beta vs. P --------------
