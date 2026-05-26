@@ -33,9 +33,9 @@ void DTRDPoint_factory::Init()
   app->SetDefaultParameter("TRDPOINT:dE_DIFF_MAX",dE_DIFF_MAX,
 			   "Difference between Point charge in X and Y planes to be considered a coincidence (default: 10000.)");
 
-  MIN_NClusters = 3;
+  MIN_NClusters = 1;
   app->SetDefaultParameter("TRDPOINT:MIN_NClusters", MIN_NClusters,
-			   "Minimum number of clusters in a plane (default: 3)");
+			   "Minimum number of clusters in a plane (default: 1)");
   
 }
 
@@ -98,7 +98,7 @@ void DTRDPoint_factory::Process(const std::shared_ptr<const JEvent>& event)
 			stripClusY.push_back(stripClus[i]);
 	}
 
-	if (stripClusX.size() < MIN_NClusters || stripClusY.size() < MIN_NClusters) {
+	if ((int)stripClusX.size() < MIN_NClusters || (int)stripClusY.size() < MIN_NClusters) {
 		// cout << "DTRDPoint_factory::Process() ... not enough clusters in one of the planes, skipping event" << endl;
 		return; // skip this event if not enough clusters
 	}

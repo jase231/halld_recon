@@ -24,6 +24,8 @@ public:
   ~JEventProcessor_TRDTrack();
   const char* className(void){return "JEventProcessor_TRDTrack";}
   void Count(const char *tit);
+  void Count_el(const char *tit);
+  void Count_pi(const char *tit);
    
 private:
   void Init() override;                       ///< Called once at program start.
@@ -33,26 +35,26 @@ private:
   void Finish() override;                     ///< Called after last event of last event source has been processed.
   
   //-Sim
-  TH2D *hTRDExtrapXY, *hExtrapXYPointDiff, *hTRDXCorr, *hTRDYCorr, *hTRDXCorr_Cut, *hTRDYCorr_Cut, *hFCALExtrapThetavsP, *hFCALExtrapThetavsP_Selected, *hExtrapXHitDiffvsTime, *hExtrapYHitDiffvsTime, *hExtrapXPointDiffvsTime, *hExtrapYPointDiffvsTime, *hExtrapXPointDiffvsX, *hExtrapYPointDiffvsY, *hResXHitDiffvsTime, *hResYHitDiffvsTime;
-  TH1D *hExtrapPx, *hExtrapPy, *hExtrapPz, *hExtrapXPointDiff, *hExtrapYPointDiff, *hFCALExtrapTheta, *hResXHitDiff_Corrected, *hResYHitDiff_Corrected;
+  TH2D *hExtrapXYPointDiff, *hTRDXCorr, *hTRDYCorr, *hTRDXCorr_matched, *hTRDYCorr_matched, *hExtrapXHitDiffvsTime, *hExtrapYHitDiffvsTime, *hExtrapXPointDiffvsTime, *hExtrapYPointDiffvsTime, *hExtrapXPointDiffvsX, *hExtrapYPointDiffvsY, *hResXHitDiffvsTime, *hResYHitDiffvsTime;
+  TH1D *hExtrapPx, *hExtrapPy, *hExtrapPz, *hExtrapXPointDiff, *hExtrapYPointDiff, *hResXHitDiff_Corrected, *hResYHitDiff_Corrected;
   //-Projection
-  TH2D *hExtrapXYHitDiff_el, *hExtrapXYHitDiff_pi;
-  TH1D *hExtrapXHitDiff_el, *hExtrapYHitDiff_el, *hExtrapXHitDiff_pi, *hExtrapYHitDiff_pi;
+  TH2D *hExtrapXYMaxPointDiff_el, *hExtrapXYMaxPointDiff_pi;
+  TH1D *hExtrapXMaxPointDiff_el, *hExtrapYMaxPointDiff_el, *hExtrapXMaxPointDiff_pi, *hExtrapYMaxPointDiff_pi;
   //-Cal
   TH2D *hFCALMatchXYDisplay_el, *hFCALMatchXYDisplay_pi, *hFCALExtrapEPvsP_TRD;
   TH1D *hFCALExtrapE_TRD, *hFCALEP_TRD_el, *hFCALEP_TRD_pi, *hFCALEP_cut_el, *hFCALEP_cut_pi, *hFCALExtrapEP_TRD;
  
   TH2D *hFCALExtrapXY, *hFCALExtrapEPvsP, *hFCALShowerXY, *hFCALXCorr, *hFCALYCorr, *hFCALTimeCorr;
-  TH1D *hFCALExtrapPx, *hFCALExtrapPy, *hFCALExtrapPz, *hFCALExtrapE, *hFCALExtrapEP, *hFCALXDiff, *hFCALYDiff, *hFCALShowerTime, *hFCALExtrapTime, *hFCALFlightTime;
+  TH1D *hFCALExtrapE, *hFCALExtrapEP, *hFCALXDiff, *hFCALYDiff, *hFCALShowerTime, *hFCALExtrapTime, *hFCALFlightTime;
   
-  TH1D *hHypEnergy_el, *hHypMomentum_el, *hHypTheta_el, *hHypEnergyDiff_el, *hHypEnergy_pi, *hHypMomentum_pi, *hHypTheta_pi, *hHypEnergyDiff_pi, *hTrackMult, *hCount, *hHypMomentumDiff, *hTrackingFOMChisq, *hTrackingFOMNdof;
-  
-  TH2D *hFCALExtrapXY_TRD, *hFCALShowerXY_TRD, *hFCALExtrapEPvsP_ext, *hFCALExtrapThetavsP_TRD, *hFCALExtrapThetavsP_Selected_ext, *hSeenPointsXY, *hExtrapsXY, *hFCALExtrapXY_p1_TRD, *hSeenPointsSingleXY, *hSeenHitsSingleXY;
-  TH1D *hFCALExtrapTheta_TRD, *hFCALExtrapE_ext, *hFCALExtrapEP_ext, *hnumPointsSeen, *hnumExtrap, *hExtrapsX, *hExtrapsY, *hSeenPointsSingleX, *hSeenPointsSingleY, *hSeenHitsSingleX, *hSeenHitsSingleY;
+  TH1D *hHypEnergy_el, *hHypMomentum_el, *hHypTheta_el, *hHypEnergyDiff_el, *hHypEnergy_pi, *hHypMomentum_pi, *hHypTheta_pi, *hHypEnergyDiff_pi, *hTrackMult, *hTrackingFOMChisq, *hTrackingFOMNdof;
+  TH1D *hCount, *hCount_el, *hCount_pi;
+  TH2D *hFCALExtrapXY_TRD, *hFCALShowerXY_TRD, *hFCALExtrapThetavsP_TRD, *hSeenPointsXY, *hExtrapsXY, *hFCALExtrapXY_p1_TRD, *hSeenPointsSingleXY, *hSeenHitsSingleXY;
+  TH1D *hFCALExtrapTheta_TRD, *hnumPointsSeen, *hnumExtrap, *hExtrapsX, *hExtrapsY, *hSeenPointsSingleX, *hSeenPointsSingleY, *hSeenHitsSingleX, *hSeenHitsSingleY;
   
   TH1D *hnumSeenExtrapFCAL_el, *hnumSeenExtrap_el, *hExtrapsX_el, *hExtrapsY_el, *hSeenPointsX_el, *hSeenPointsY_el, *hSeenPointsSingleX_el, *hSeenPointsSingleY_el, *hnumSeenExtrapFCAL_pi, *hnumSeenExtrap_pi, *hExtrapsX_pi, *hExtrapsY_pi, *hSeenPointsX_pi, *hSeenPointsY_pi, *hSeenPointsSingleX_pi, *hSeenPointsSingleY_pi, *hnumPointsSeen_el, *hnumPointsSeenFCAL_el, *hnumPointsSeen_pi, *hnumPointsSeenFCAL_pi;
   
-  TH2D *hnumExtrapsXY_el, *hSeenPointsSingleXY_el, *hSeenPointsXY_el, *hXHitvsTime_el, *hYHitvsTime_el, *hXHitvsTime_QW_el, *hYHitvsTime_QW_el, *hXHitvsTime_Qmax_el, *hYHitvsTime_Qmax_el, *hXHitvsTime_Qmax_QW_el, *hYHitvsTime_Qmax_QW_el, *hnumExtrapsXY_pi, *hSeenPointsSingleXY_pi, *hSeenPointsXY_pi, *hXHitvsTime_pi, *hYHitvsTime_pi, *hXHitvsTime_QW_pi, *hYHitvsTime_QW_pi,  *hXHitvsTime_Qmax_pi, *hYHitvsTime_Qmax_pi, *hXHitvsTime_Qmax_QW_pi, *hYHitvsTime_Qmax_QW_pi, *hExtrapsXY_el, *hExtrapsXY_pi, *hXHitvsTime_Qmax_Converted_el, *hYHitvsTime_Qmax_Converted_el, *hXHitvsTime_Qmax_Converted_pi, *hYHitvsTime_Qmax_Converted_pi, *hXHitvsTime_Converted_el, *hYHitvsTime_Converted_el, *hXHitvsTime_Converted_pi, *hYHitvsTime_Converted_pi;
+  TH2D *hnumExtrapsXY_el, *hSeenPointsSingleXY_el, *hSeenPointsXY_el, *hXPointvsTime_el, *hYPointvsTime_el, *hXPointvsTime_QW_el, *hYPointvsTime_QW_el, *hXPointvsTime_Qmax_el, *hYPointvsTime_Qmax_el, *hXPointvsTime_Qmax_QW_el, *hYPointvsTime_Qmax_QW_el, *hnumExtrapsXY_pi, *hSeenPointsSingleXY_pi, *hSeenPointsXY_pi, *hXPointvsTime_pi, *hYPointvsTime_pi, *hXPointvsTime_QW_pi, *hYPointvsTime_QW_pi,  *hXPointvsTime_Qmax_pi, *hYPointvsTime_Qmax_pi, *hXPointvsTime_Qmax_QW_pi, *hYPointvsTime_Qmax_QW_pi, *hExtrapsXY_el, *hExtrapsXY_pi, *hXPointvsTime_Qmax_Converted_el, *hYPointvsTime_Qmax_Converted_el, *hXPointvsTime_Qmax_Converted_pi, *hYPointvsTime_Qmax_Converted_pi, *hXPointvsTime_Converted_el, *hYPointvsTime_Converted_el, *hXPointvsTime_Converted_pi, *hYPointvsTime_Converted_pi;
 
   TH1D *hDL1Time, *hPSPairTime;
   
