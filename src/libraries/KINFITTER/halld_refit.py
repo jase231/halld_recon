@@ -65,20 +65,21 @@ class Refitter:
         ), "Could not load 'libKINFITTER.so'"
 
         # C++ helper for unpacking matrices
-        ROOT.gInterpreter.Declare("""
-        #include "TMatrixFSym.h"
-        void FastUnpackMatrix(const void* source_void, TMatrixFSym* dest, int dim, int offset) {
-            const float* source = (const float*)source_void;
-            int k = offset;
-            for (int i = 0; i < dim; ++i) {
-                for (int j = i; j < dim; ++j) {
-                    float val = source[k++];
-                    (*dest)(i, j) = val;
-                    (*dest)(j, i) = val;
+        if not hasattr(ROOT, "FastUnpackMatrix"):
+            ROOT.gInterpreter.Declare("""
+            #include "TMatrixFSym.h"
+            void FastUnpackMatrix(const void* source_void, TMatrixFSym* dest, int dim, int offset) {
+                const float* source = (const float*)source_void;
+                int k = offset;
+                for (int i = 0; i < dim; ++i) {
+                    for (int j = i; j < dim; ++j) {
+                        float val = source[k++];
+                        (*dest)(i, j) = val;
+                        (*dest)(j, i) = val;
+                    }
                 }
             }
-        }
-        """)
+            """)
 
         self.kinFitUtils = ROOT.DKinFitUtils_StandAlone(mag_field_coarse, mag_field_fine)
         self.kinFitter = ROOT.DKinFitter(self.kinFitUtils)
@@ -183,7 +184,7 @@ class Refitter:
                 self.p_charge[pt] = ROOT.ParticleCharge(pt)
                 self.p_mass[pt] = ROOT.ParticleMass(pt)
 
-    def process_events(self, out_file_path, max_events=None):
+    def process_events(self, out_file_path, max_events=None, output_mode="cut"):
         self._enable_branches()
 
         # disable IsComboCut during the clone so we can create a clean mutable buffer in the new tree
@@ -203,6 +204,15 @@ class Refitter:
         # prepare python array buffer for the new IsComboCut branch
         is_combo_cut_buf = array.array('B', [0] * self.MAX_COMBOS)
         out_tree.Branch("IsComboCut", is_combo_cut_buf, f"IsComboCut[NumCombos]/O")
+
+        # prepare buffers for chisq branches if requested
+        chisq_bufs = {}
+        if output_mode == "chisq":
+            for hypo in self.hypotheses:
+                name = hypo["name"]
+                buf = array.array('f', [0.0] * self.MAX_COMBOS)
+                chisq_bufs[name] = buf
+                out_tree.Branch(f"{name}_chisq_ndf", buf, f"{name}_chisq_ndf[NumCombos]/F")
 
         processed = 0
         combos_cut_total = 0
@@ -276,6 +286,9 @@ class Refitter:
             has_existing_cut = hasattr(event, "IsComboCut")
             for combo_idx in range(num_combos):
                 is_combo_cut_buf[combo_idx] = event.IsComboCut[combo_idx] if has_existing_cut else 0
+                if output_mode == "chisq":
+                    for name in chisq_bufs:
+                        chisq_bufs[name][combo_idx] = -1.0
 
             for combo_idx in range(num_combos):
                 if is_combo_cut_buf[combo_idx]:
@@ -360,10 +373,13 @@ class Refitter:
                         if new_ndf > 0:
                             new_chisq_ndf = self.kinFitter.Get_ChiSq() / new_ndf
                             
-                            if new_chisq_ndf < orig_chisq_ndf:
-                                is_combo_cut_buf[combo_idx] = 1
-                                combos_cut_total += 1
-                                break 
+                            if output_mode == "chisq":
+                                chisq_bufs[hypothesis["name"]][combo_idx] = new_chisq_ndf
+                            elif output_mode == "cut":
+                                if new_chisq_ndf < orig_chisq_ndf:
+                                    is_combo_cut_buf[combo_idx] = 1
+                                    combos_cut_total += 1
+                                    break 
 
             out_tree.Fill()
             processed += 1
