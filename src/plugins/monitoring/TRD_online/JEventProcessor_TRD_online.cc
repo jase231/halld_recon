@@ -43,9 +43,9 @@ static TH1D *hDigiHit_Time[NTRDplanes];
 static TH2D *hDigiHit_TimeVsStrip[NTRDplanes];
 static TH2D *hDigiHit_TimeVsPeak[NTRDplanes];
 
-static TH1I *hHit_NHits;
-static TH1I *hHit_NPKs;
-static TH1I *hHit_NHits_[NTRDplanes];
+//static TH1I *hHit_NHits;
+static TH1I *hHit_NPKs[NTRDplanes];
+static TH1I *hHit_NHits[NTRDplanes];
 static TH1D *hHit_Occupancy[NTRDplanes];
 static TH1D *hHit_Time[NTRDplanes];
 static TH1D *hHit_PulseHeight[NTRDplanes];
@@ -54,36 +54,32 @@ static TH2D *hHit_TimeVsdE[NTRDplanes];
 static TH2D *hHit_TimeVsdE_Max[NTRDplanes];
 static TH2D *hHit_StripVsdE[NTRDplanes];
 
-const int NEventsMonitor = 10;
-static TH1D *hCluster_pos_width;
-static TH1D *hCluster_time_width;
-
+const int NEventsMonitor = 10; //--Change this for event-by-event viewing histograms
 const int NMaxExtrapolations = 5;
 const int NMaxSegments = 5;
+
+static TH1I *hCluster_NClusters;
+static TH2I *hCluster_NClustersPerTrack;
+static TH1D *hCluster_pos_width;
+static TH1D *hCluster_time_width;
 static TH2D *hClusterHits_TimeVsPos[NTRDplanes];
 static TH2D *hCluster_TimeVsPos[NTRDplanes];
+static TH2D *hClusterHits_TimeVsStrip[NTRDplanes];
+static TH2D *hCluster_TimeVsdE_Max[NTRDplanes];
+
 static TH2D *hClusterHits_TimeVsPosEvent[NTRDplanes][NEventsMonitor];
 static TH2D *hCluster_TimeVsPosEvent[NTRDplanes][NEventsMonitor];
 static TH2D *hDigiHit_TimeVsStripEvent[NTRDplanes][NEventsMonitor];
 static TH2D *hPoint_TimeVsPosEvent[NTRDplanes][NEventsMonitor];
-
-const int NEventsClusterMonitor = 10;
-static TH1I *hCluster_NClusters;
-static TH2D *hClusterHits_TimeVsStrip[NTRDplanes];
-static TH2D *hCluster_TimeVsStrip[NTRDplanes];
-static TH2D *hCluster_TimeVsdE_Max[NTRDplanes];
-static TH2D *hClusterHits_TimeVsStripEvent[NTRDplanes][NEventsClusterMonitor];
-static TH2D *hCluster_TimeVsStripEvent[NTRDplanes][NEventsClusterMonitor];
-
-static TH3D *hPoint_XYT;
-static TH1I *hPoint_NHits;
+static TH2D *hPointH_TimeVsPosEvent[NTRDplanes][NEventsMonitor];
 
 static TH1D *hSegment_Members_Event[NEventsMonitor][NMaxSegments];
 static TH1D *hExtrapolation_Members_Event[NEventsMonitor][NMaxExtrapolations];
 static TH2D *hPoint_ZVsX_Event[NEventsMonitor];
 static TH2D *hPoint_ZVsY_Event[NEventsMonitor];
-static TH1I *hNExtrapolations;
 
+static TH3D *hPoint_XYT;
+static TH1I *hPoint_NHits;
 static TH1D *hPoint_Time;
 static TH1D *hPoint_TimeDiff;
 static TH1D *hPoint_dE;
@@ -128,6 +124,10 @@ static TH1D *hSegment_TY;
 static TH1D *hSegment_OccupancyX;
 static TH1D *hSegment_OccupancyY;
 
+//--Change these if you want to load GlueX tracking info
+static bool useNizarTrackMatching = false;
+static bool verboseNizarTrackMatching = false;
+
 //----------------------------------------------------------------------------------
 
 
@@ -166,11 +166,14 @@ void JEventProcessor_TRD_online::Init() {
     TDirectory *mainDir = gDirectory;
     TDirectory *trdDir = gDirectory->mkdir("TRD");
     trdDir->cd();
-    // book hists
+	
+	///////////////////////////////
+    //   Book Histos 			//
+    /////////////////////////////
+	
     trd_num_events = new TH1I("trd_num_events","TRD Number of Events",1,0.5,1.5);
 	outputTextFile.open("TRDOnline_pointHits_electron_candidate_list.txt");
 	outputTextFile2.open("TRDOnline_points_electron_candidate_list.txt");
-	//outputTextFileTemp.open("TRDOnline_all_electrons.txt");
 	
     // digihit-level hists
     trdDir->cd();
@@ -181,11 +184,9 @@ void JEventProcessor_TRD_online::Init() {
     // histograms for each plane
     for(int i=0; i<NTRDplanes; i++) {
 		int NTRDstrips = 0.;
-		if(i==0)
-			NTRDstrips = NTRD_xstrips;
-		else
-			NTRDstrips = NTRD_ystrips;
-
+		if(i==0) NTRDstrips = NTRD_xstrips;
+		else NTRDstrips = NTRD_ystrips;
+		
 		hDigiHit_Occupancy[i] = new TH1D(Form("DigiHit_Occupancy_Plane%d",i),Form("TRD Plane %d Hit Occupancy;Strip;Raw Hits / Counter",i),NTRDstrips,0.5,0.5+NTRDstrips);
 		hDigiHit_QualityFactor[i] = new TH1I(Form("DigiHit_QualityFactor_Plane%d",i),Form("TRD Plane %d Quality Factor;Quality Factor;Raw Hits",i),4,-0.5,3.5);
 		hDigiHit_PeakVsStrip[i] = new TH2D(Form("DigiHit_PeakVsStrip_Plane%d",i),Form("TRD Plane %d Pulse Peak vs. Strip;Strip;Pulse Peak [fADC units]",i),NTRDstrips,0.5,0.5+NTRDstrips,410,0.0,4100.0);
@@ -193,23 +194,21 @@ void JEventProcessor_TRD_online::Init() {
 		hDigiHit_Time[i] = new TH1D(Form("DigiHit_Time_Plane%d",i),Form("TRD Plane %d Peak Time;8*(Peak Time) [ns];Raw Hits / 2 ns",i),225,0.0,1800.0);
 		hDigiHit_TimeVsStrip[i] = new TH2D(Form("DigiHit_TimeVsStrip_Plane%d",i),Form("TRD Plane %d Time vs. Strip;Strip;8*(Peak Time) [ns]",i),NTRDstrips,0.5,0.5+NTRDstrips,225,0.0,1800.0);
 		hDigiHit_TimeVsPeak[i] = new TH2D(Form("DigiHit_TimeVsPeak_Plane%d",i),Form("TRD Plane %d Time vs. Pulse Peak;Pulse Peak [fADC units];8*(Peak Time) [ns]",i),410,0.0,4100.0,225,0.0,1800.0);
-		
 	}
 	
     // hit-level hists
     trdDir->cd();
     gDirectory->mkdir("Hit")->cd();
-    hHit_NHits = new TH1I("Hit_NHits","TRD Calibrated Hit Multiplicity;Calibrated Hits;Events",250,0.5,0.5+250);
-    hHit_NPKs = new TH1I("Hit_NPKs","TRD fADC Peak Multiplicity for Stored Hits;Raw Peaks;Events",15,0.5,0.5+15);
+    //hHit_NHits = new TH1I("Hit_NHits","TRD Calibrated Hit Multiplicity;Calibrated Hits;Events",250,0.5,0.5+250);
+    //hHit_NPKs = new TH1I("Hit_NPKs","TRD fADC Peak Multiplicity for Stored Hits;Raw Peaks;Events",15,0.5,0.5+15);
 	// histograms for each plane
     for(int i=0; i<NTRDplanes; i++) {
 		int NTRDstrips = 0.;
-		if(i==0)
-			NTRDstrips = NTRD_xstrips;
-		else
-			NTRDstrips = NTRD_ystrips;
+		if(i==0) NTRDstrips = NTRD_xstrips;
+		else NTRDstrips = NTRD_ystrips;
 		
-		hHit_NHits_[i] = new TH1I(Form("Hit_NHits_Plane%d",i),Form("TRD Plane %d Calibrated Hit Multiplicity;Calibrated Hits;Events",i),250,0.5,0.5+250);
+		hHit_NHits[i] = new TH1I(Form("Hit_NHits_Plane%d",i),Form("TRD Plane %d Calibrated Hit Multiplicity;Calibrated Hits;Events",i),250,0.5,0.5+250);
+		hHit_NPKs[i] = new TH1I(Form("Hit_NPKs_Plane%d",i),Form("TRD Plane %d fADC Peak Multiplicity for Stored Hits;Raw Peaks;Events",i),15,0.5,0.5+15);
 		hHit_Occupancy[i] = new TH1D(Form("Hit_Occupancy_Plane%d",i),Form("TRD Plane %d Hit Occupancy;Strip;Calibrated Hits / Counter",i),NTRDstrips,0.5,0.5+NTRDstrips);
 		hHit_Time[i] = new TH1D(Form("Hit_Time_Plane%d",i),Form("TRD Plane %d Time;8*(Peak Time) [ns];Calibrated Hits / 2 ns",i),225,0.0,1800.0);
 		hHit_PulseHeight[i] = new TH1D(Form("Hit_PulseHeight_Plane%d",i),Form("TRD Plane %d Pulse Height;(Pulse Peak - Ped)[fADC units];Calibrated Hits / 1 unit",i),350,0.0,3500.0);
@@ -271,16 +270,13 @@ void JEventProcessor_TRD_online::Init() {
     trdDir->cd();
 	// cluster-level hists
     eventClusterCount = 0;
-
+	//eventPointCount = 0;
+	
     gDirectory->mkdir("Cluster")->cd();
-    hCluster_NClusters = new TH1I("Cluster_NClusters","TRD number of cluster per event;clusters;events",100,0.5,0.5+100);
+    hCluster_NClusters = new TH1I("Cluster_NClusters","TRD Number of Clusters per Event;N Clusters;Events",75,0.5,0.5+75);
+	hCluster_NClustersPerTrack = new TH2I("Cluster_NClustersPerTrack","TRD Number of Clusters per Track;N Clusters;N Tracks",75,0.5,0.5+75,12,0.5,12.5);
     hCluster_pos_width = new TH1D("Cluster_pos_width","TRD Cluster Position Width;Position Width [cm];Events",100,0.,50.);
     hCluster_time_width = new TH1D("Cluster_time_width","TRD Cluster Time Width;Time Width [ns];Events",100,0.,50.0);
-
-    for(int i=0; i<NTRDplanes; i++) {
-        hClusterHits_TimeVsPos[i] = new TH2D(Form("ClusterHits_TimeVsPos_Plane%d",i),Form("TRD Plane %d Cluster Hits Time vs. Position;8*(Peak Time) [ns];Position [cm]",i),250,0,2000.0,100,-50,50);
-        hCluster_TimeVsPos[i] = new TH2D(Form("Cluster_TimeVsPos_Plane%d",i),Form("TRD Plane %d Cluster Time vs. Position;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50,50);
-    }
 
     // histograms for each plane
     for(int i=0; i<NTRDplanes; i++) {
@@ -289,15 +285,12 @@ void JEventProcessor_TRD_online::Init() {
 	{    NTRDstrips = NTRD_xstrips;}
         else
 	{    NTRDstrips = NTRD_ystrips;}
-
-            hClusterHits_TimeVsStrip[i] = new TH2D(Form("ClusterHits_TimeVsStrip_Plane%d",i),Form("TRD Plane %d Cluster Hits Time vs. Strip;8*(Peak Time) [ns];Strip",i),225,0,1800.0,NTRDstrips,0.5,0.5+NTRDstrips);
-            hCluster_TimeVsStrip[i] = new TH2D(Form("Cluster_TimeVsStrip_Plane%d",i),Form("TRD Plane %d Cluster Time vs. Strip;8*(Peak Time) [ns];Strip",i),225,0.,1800.0,NTRDstrips,0.5,0.5+NTRDstrips);
+			
+		hClusterHits_TimeVsPos[i] = new TH2D(Form("ClusterHits_TimeVsPos_Plane%d",i),Form("TRD Plane %d Cluster Hits Time vs. Position;8*(Peak Time) [ns];Position [cm]",i),250,0,2000.0,100,-50,50);
+        hCluster_TimeVsPos[i] = new TH2D(Form("Cluster_TimeVsPos_Plane%d",i),Form("TRD Plane %d Cluster Time vs. Position;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50,50);	
+		hClusterHits_TimeVsStrip[i] = new TH2D(Form("ClusterHits_TimeVsStrip_Plane%d",i),Form("TRD Plane %d Cluster Hits Time vs. Strip;8*(Peak Time) [ns];Strip",i),225,0,1800.0,NTRDstrips,0.5,0.5+NTRDstrips);
 		hCluster_TimeVsdE_Max[i] = new TH2D(Form("Cluster_TimeVsdE_Max_Plane%d",i),Form("TRD Plane %d Max Cluster Charge in Time;8*(Peak Time) [ns];Max dE [q]",i),150,0.,1200.,800,0.,10000.);
 		
-        for(int j=0; j<NEventsClusterMonitor; j++) {
-            hClusterHits_TimeVsStripEvent[i][j] = new TH2D(Form("ClusterHits_TimeVsStrip_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Hits Time vs. Strip;8*(Peak Time) [ns];Strip",i),225,0,1800.0,NTRDstrips,0.5,0.5+NTRDstrips);
-            hCluster_TimeVsStripEvent[i][j] = new TH2D(Form("Cluster_TimeVsStrip_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Time vs. Strip;8*(Peak Time) [ns];Strip",i),225,0.,1800.0,NTRDstrips,0.5,0.5+NTRDstrips);
-        }
     }
     
 	trdDir->cd();
@@ -305,56 +298,55 @@ void JEventProcessor_TRD_online::Init() {
     hSegment_NHits = new TH1I("Segment_NHits","TRD Track Segment Multiplicity;Calibrated Track Segments;Events",20,-0.5,20-0.5);
     hSegment_TX = new TH1D("Segment_TX","TRD Track Segment Tx;Tx; ",80,-40.,40.);
     hSegment_TY = new TH1D("Segment_TY","TRD Track Segment Ty;Ty; ",80,-40.,40.);
-    hSegment_OccupancyX = new TH1D("Segment_OccupancyX","TRD Track Segment X Occupancy;X [cm]; ",900,-90.,0.);
-    hSegment_OccupancyY = new TH1D("Segment_OccupancyY","TRD Track Segment Y Occupancy;Y [cm]; ",900,-90.,0.);
+    hSegment_OccupancyX = new TH1D("Segment_OccupancyX","TRD Track Segment X Occupancy;X [cm]; ",450,-90.,0.);
+    hSegment_OccupancyY = new TH1D("Segment_OccupancyY","TRD Track Segment Y Occupancy;Y [cm]; ",450,-90.,0.);
 	
-	trdDir->cd();
-    gDirectory->mkdir("Track")->cd();
-    hNExtrapolations = new TH1I("NExtrapolations","Number of Extrapolations at TRD Plane per Event;Number of Extrapolations;Events",10,-0.5,9.5);
-
+	// event-by-event histos
 	trdDir->cd();
     gDirectory->mkdir("EventMonitor")->cd();
     // histograms for each plane
-    const double dTRDpos[2] = {-47.4695,-59.0315}; // TRD offsets from geometry
     for(int i=0; i<NTRDplanes; i++) {
         int NTRDstrips = 0.;
         if(i==0)
     {    NTRDstrips = NTRD_xstrips;}
         else
     {    NTRDstrips = NTRD_ystrips;}
+		
         for(int j=0; j<NEventsMonitor; j++) {
-            hClusterHits_TimeVsPosEvent[i][j] = new TH2D(Form("ClusterHits_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Hits Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0,2000.0,100,-50,50);
-            hCluster_TimeVsPosEvent[i][j] = new TH2D(Form("Cluster_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50,50);
+            hClusterHits_TimeVsPosEvent[i][j] = new TH2D(Form("ClusterHits_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Hits Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0,2000.0,100,-50.,50.);
+            hCluster_TimeVsPosEvent[i][j] = new TH2D(Form("Cluster_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Cluster Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50.,50.);
             hDigiHit_TimeVsStripEvent[i][j] = new TH2D(Form("DigiHit_TimeVsStrip_Plane%d_Event%d",i,j),Form("TRD Plane %d DigiHit Time vs. Strip;8*(Peak Time) [ns];Strip",i),250,0.,2000.0,NTRDstrips,-0.5,-0.5+NTRDstrips);
-            hPoint_TimeVsPosEvent[i][j] = new TH2D(Form("Point_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Point Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50+dTRDpos[i],50+dTRDpos[i]);
+            hPoint_TimeVsPosEvent[i][j] = new TH2D(Form("Point_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Point Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50.,50.);
+			hPointH_TimeVsPosEvent[i][j] = new TH2D(Form("PointH_TimeVsPos_Plane%d_Event%d",i,j),Form("TRD Plane %d Point_Hit Time vs. Pos;8*(Peak Time) [ns];Position [cm]",i),250,0.,2000.0,100,-50.,50.);
+			
+			hPoint_ZVsX_Event[i] = new TH2D(Form("Point_ZVsX_Event%d",i),"TRD Point X vs. Z;Z [cm];X [cm]",100,528,533,900,-90,0);
+        	hPoint_ZVsY_Event[i] = new TH2D(Form("Point_ZVsY_Event%d",i),"TRD Point Y vs. Z;Z [cm];Y [cm]",100,528,533,900,-90,0);
         }
     }
 	
+	if (useNizarTrackMatching) {
+	//const double dTRDpos[2] = {-47.4695,-59.0315}; // TRD offsets from geometry //This needs fixed!!! since it has changed by run period. Needs somehow pulled from databases instead of set here
 	const TString Segment_Members_Vars[8] = {"x","y","tx","ty","var_x","var_y","var_tx","var_ty"};
     const TString Extrapolation_Members_Vars[8] = {"x","y","dxdz","dydz"};
     for (int i=0; i<NEventsMonitor; i++) {
-
         for (int j=0; j<NMaxSegments; j++) {
             hSegment_Members_Event[i][j] = new TH1D(Form("Segment_Members_Event%d_Segment%d",i,j),Form("TRD Segment Members Event %d Segment %d",i,j),8,0.,8.);
             for (int k=0; k<8; k++) {
                 hSegment_Members_Event[i][j]->GetXaxis()->SetBinLabel(k+1,Segment_Members_Vars[k]);
             }
         }
-
         for (int j=0; j<NMaxExtrapolations; j++) {
             hExtrapolation_Members_Event[i][j] = new TH1D(Form("Extrapolation_Members_Event%d_Extrapolation%d",i,j),Form("TRD Extrapolation Members Event %d Extrapolation %d",i,j),4,0.,4.);
             for (int k=0; k<4; k++) {
                 hExtrapolation_Members_Event[i][j]->GetXaxis()->SetBinLabel(k+1,Extrapolation_Members_Vars[k]);
             }
         }
-
-        hPoint_ZVsX_Event[i] = new TH2D(Form("Point_ZVsX_Event%d",i),"TRD Point X vs. Z;Z [cm];X [cm]",100,528,533,900,-90,0);
-        hPoint_ZVsY_Event[i] = new TH2D(Form("Point_ZVsY_Event%d",i),"TRD Point Y vs. Z;Z [cm];Y [cm]",100,528,533,900,-90,0);
     }
-
     NEventsTrack = 0;
     NEventsTrackSegmentMatch = 0;
-		
+	
+	} //--END if useNizarTrackMatching
+	
     // back to main dir
     mainDir->cd();
 }
@@ -419,8 +411,11 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
     event->Get(pointHits,"Hit");
 	vector<const DTRDSegment*> segments;
     event->Get(segments,"Extrapolation");
-    vector<const DChargedTrack*> tracks;
-    event->Get(tracks);
+	vector<const DChargedTrack*> tracks;
+	if (useNizarTrackMatching) {
+    	event->Get(tracks);
+	}
+	
 	//if (runnumber>130853&&runnumber<131357) outputTextFileTemp<<runnumber<<" "<<eventnumber<<endl;
 	
 	//if (runnumber>130853&&runnumber<131357) outputTextFileTemp<<runnumber<<" "<<eventnumber<<endl;
@@ -453,25 +448,24 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
     //        TRD Hits       //
     ///////////////////////////
 	
-    if (hits.size() > 0) hHit_NHits->Fill(hits.size());
+    //if (hits.size() > 0) hHit_NHits->Fill(hits.size());
 	float hit_maxQ_x = 0., hit_maxQ_y = 0.;
 	float hit_maxTime_x = 0., hit_maxTime_y = 0.;
     for (const auto& hit : hits) {
 	    int plane = hit->plane-1;
 		if (plane == 0) {
-			hHit_NHits_[plane]->Fill(hits.size());
 			if (hit->q > hit_maxQ_x) {
 				hit_maxQ_x = hit->q;
 				hit_maxTime_x = hit->t;
 			}
 		}
 		else if (plane == 1) {
-			hHit_NHits_[plane]->Fill(hits.size());
 			if (hit->q > hit_maxQ_y) {
                 hit_maxQ_y = hit->q;
                 hit_maxTime_y = hit->t;
             }
 		}
+		hHit_NHits[plane]->Fill(hits.size());
 	    hHit_Occupancy[plane]->Fill(hit->strip);
 	    hHit_Time[plane]->Fill(hit->t);
 	    hHit_PulseHeight[plane]->Fill(hit->pulse_height);
@@ -483,7 +477,7 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
         hit->GetSingle(locAssociatedDigiHit);
         if(!locAssociatedDigiHit) continue;
         int NPK = locAssociatedDigiHit->NPK;
-		hHit_NPKs->Fill(NPK);
+		hHit_NPKs[plane]->Fill(NPK);
     }
 	if (hit_maxQ_x > 0.) hHit_TimeVsdE_Max[0]->Fill(hit_maxTime_x, hit_maxQ_x);
 	if (hit_maxQ_y > 0.) hHit_TimeVsdE_Max[1]->Fill(hit_maxTime_y, hit_maxQ_y);
@@ -492,42 +486,27 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
     //    TRD Clusters       //
     ///////////////////////////
 	
-    if (clusters.size() > 2 && eventClusterCount < NEventsClusterMonitor) {
-    	cout << "Event " << eventnumber << " has " << clusters.size() << " clusters, eventClusterCount = " << eventClusterCount << endl;
-    	for (const auto& cluster : clusters) {
-    		int plane = cluster->plane-1;
-        	double pos = 0.;
-        	if (plane == 0) pos = cluster->pos.x();
-        	else pos = cluster->pos.y();
-
-        	hCluster_TimeVsStripEvent[plane][eventClusterCount]->Fill(cluster->t_avg, pos);
-    	}
-
-        for (const auto& hit : hits) {
-            int plane = hit->plane-1;
-            hClusterHits_TimeVsStripEvent[plane][eventClusterCount]->Fill(hit->t, hit->strip);
-        }
-		
-		for (const auto& hit : digihits) {
-            int plane = hit->plane-1;
-            hDigiHit_TimeVsStripEvent[plane][eventClusterCount]->Fill(8.*hit->peak_time, hit->strip);
-        }
-
-        eventClusterCount++;
-    }
-	
-	if (clusters.size() > 0) hCluster_NClusters->Fill(clusters.size());
-	float cluster_maxQ_x = 0., cluster_maxQ_y = 0.;
+    const double STRIP_PITCH=0.1;
+    int NCluster_X = 0;
+    int NCluster_Y = 0;
+	float cluster_maxQ_x = 0., cluster_maxQ_y = 0.; 
     float cluster_maxTime_x = 0., cluster_maxTime_y = 0.;
-    for (const auto& cluster : clusters) {
+	
+	if (clusters.size() > 0) {
+		hCluster_NClusters->Fill(clusters.size());
+		if (useNizarTrackMatching) { hCluster_NClustersPerTrack->Fill(clusters.size(),tracks.size()); }
+	}
+    
+	for (const auto& cluster : clusters) {
         int plane = cluster->plane-1;
-        double pos = 0.;
+        double pos = 1000.;
         if (plane == 0) {
 			pos = cluster->pos.x();
 			if (cluster->q_tot > cluster_maxQ_x) {
                 cluster_maxQ_x = cluster->q_tot;
                 cluster_maxTime_x = cluster->t_avg;
             }
+			NCluster_X++;
 		}
         else if (plane == 1) {
 			pos = cluster->pos.y();
@@ -535,16 +514,23 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
                 cluster_maxQ_y = cluster->q_tot;
                 cluster_maxTime_y = cluster->t_avg;
             }
+			NCluster_Y++;
 		}
-        hCluster_TimeVsStrip[plane]->Fill(cluster->t_avg, pos);
+		hCluster_TimeVsPos[plane]->Fill(cluster->t_avg, pos);
+		hCluster_pos_width->Fill(cluster->pos_width);
+        hCluster_time_width->Fill(cluster->time_width);
     }
 	if (cluster_maxQ_x > 0.) hCluster_TimeVsdE_Max[0]->Fill(cluster_maxTime_x, cluster_maxQ_x);
     if (cluster_maxQ_y > 0.) hCluster_TimeVsdE_Max[1]->Fill(cluster_maxTime_y, cluster_maxQ_y);
 
-
     for (const auto& hit : hits) {
         int plane = hit->plane-1;
+		double pos = 1000.;
+		if (plane==0) pos = -1.*STRIP_PITCH*double(NTRD_xstrips/2-hit->strip+0.5);
+		else if (plane==1) pos = STRIP_PITCH*double(NTRD_ystrips/2-hit->strip+0.5);
+		
         hClusterHits_TimeVsStrip[plane]->Fill(hit->t, hit->strip);
+		if (pos<1000.) hClusterHits_TimeVsPos[plane]->Fill(hit->t, pos);
     }
 		
 	///////////////////////////
@@ -618,15 +604,9 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
 		}
 	}
 	
-	///////////////////////////
+	/////////////////////////////
     //      TRD Segments       //
-    ///////////////////////////
-	const int NUM_X_STRIPS = 720;
-    const int NUM_Y_STRIPS = 528;
-    const double STRIP_PITCH=0.1;
-
-    int NCluster_X = 0;
-    int NCluster_Y = 0;
+    ////////////////////////////
 	
     if (segments.size() > 0) hSegment_NHits->Fill(segments.size());
     for (const auto& segment : segments) {
@@ -635,26 +615,27 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
 		hSegment_OccupancyX->Fill(segment->x);
 		hSegment_OccupancyY->Fill(segment->y);
 	}
-
-    if (NCluster_X > 3 && NCluster_Y > 3 && eventClusterCount < NEventsMonitor) {
+	
+	//////////////////////////////////////////////
+    //      TRD Event-By-Event Monitoring       //
+    /////////////////////////////////////////////
+	
+	
+    if (NCluster_X > 2 && NCluster_Y > 2 && eventClusterCount < NEventsMonitor) {
     	for (const auto& cluster : clusters) {
     		int plane = cluster->plane-1;
-        	double pos = 0.;
+        	double pos = 1000.;
         	if (plane == 0) pos = cluster->pos.x();
         	else pos = cluster->pos.y();
-
-        	hCluster_TimeVsPosEvent[plane][eventClusterCount]->Fill(cluster->t_avg, pos);
-			hCluster_TimeVsPos[plane]->Fill(cluster->t_avg, pos);
-        	hCluster_pos_width->Fill(cluster->pos_width);
-        	hCluster_time_width->Fill(cluster->time_width);
+        	if (pos<1000.) hCluster_TimeVsPosEvent[plane][eventClusterCount]->Fill(cluster->t_avg, pos);
     	}
 
         for (const auto& hit : hits) {
             int plane = hit->plane-1;
-            double pos = 0;
-            if (plane == 0) pos = -1*STRIP_PITCH*double(NUM_X_STRIPS/2-hit->strip+0.5);
-            else pos = STRIP_PITCH*double(NUM_Y_STRIPS/2-hit->strip+0.5);
-            hClusterHits_TimeVsPosEvent[plane][eventClusterCount]->Fill(hit->t, pos);
+            double pos = 1000.;
+            if (plane == 0) pos = -1*STRIP_PITCH*double(NTRD_xstrips/2-hit->strip+0.5);
+            else pos = STRIP_PITCH*double(NTRD_ystrips/2-hit->strip+0.5);
+            if (pos<1000.) hClusterHits_TimeVsPosEvent[plane][eventClusterCount]->Fill(hit->t, pos);
         }
 		
 		for (const auto& hit : digihits) {
@@ -668,7 +649,15 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
             hPoint_ZVsX_Event[eventClusterCount]->Fill(point->z, point->x);
             hPoint_ZVsY_Event[eventClusterCount]->Fill(point->z, point->y);
         }
-
+		
+		for (const auto& point : pointHits) {
+            hPointH_TimeVsPosEvent[0][eventClusterCount]->Fill(point->time, point->x);
+            hPointH_TimeVsPosEvent[1][eventClusterCount]->Fill(point->time, point->y);
+		}
+		
+		
+		if (useNizarTrackMatching) {
+		
         vector<vector<DTrackFitter::Extrapolation_t>> v_extrapolations;
         for (const auto& track: tracks) {
             const DChargedTrackHypothesis *hyp = track->Get_BestTrackingFOM();
@@ -683,14 +672,14 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
         unsigned int iExtrapolation = 0;
         for (const auto& extrapolations : v_extrapolations) {
             DTrackFitter::Extrapolation_t extrapolation = extrapolations[0];
-            if ((extrapolations[0].position.x() < -83.47 || extrapolations[0].position.x() > -11.47) || 
-                (extrapolations[0].position.y() < -68.6 || extrapolations[0].position.y() > -32.61)) continue;
+            if (runnumber<140000 && ((extrapolations[0].position.x() < -83.47 || extrapolations[0].position.x() > -11.47) || 
+                (extrapolations[0].position.y() < -68.6 || extrapolations[0].position.y() > -32.61))) continue; //Spring 2025 ECAL Commissioning Period
+			else if (runnumber>140000 && ((extrapolations[0].position.x() < -70.39 || extrapolations[0].position.x() > -10.39) ||
+                (extrapolations[0].position.y() < -51.88 || extrapolations[0].position.y() > -25.48))) continue; //Spring 2026 Low Energy Running Period
             double extrp_x = extrapolation.position.x();
             double extrp_y = extrapolation.position.y();
             double extrp_dxdz = extrapolation.momentum.x()/extrapolation.momentum.z();
             double extrp_dydz = extrapolation.momentum.y()/extrapolation.momentum.z();
-            // cout << "TRD_online:Process() ... segment x = " << segment_x << ", y = " << segment_y << ", tx = " << segment_tx << ", ty = " << segment_ty << endl;
-            // cout << "TRD_online:Process() ... extrapolation x = " << extrp_x << ", y = " << extrp_y << ", dxdz = " << extrp_dxdz << ", dydz = " << extrp_dydz << endl;
             hExtrapolation_Members_Event[eventClusterCount][iExtrapolation]->SetBinContent(1, extrp_x);
             hExtrapolation_Members_Event[eventClusterCount][iExtrapolation]->SetBinContent(2, extrp_y);
             hExtrapolation_Members_Event[eventClusterCount][iExtrapolation]->SetBinContent(3, extrp_dxdz);
@@ -709,13 +698,16 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
             hSegment_Members_Event[eventClusterCount][iSegment]->SetBinContent(6, segment->var_y);
             hSegment_Members_Event[eventClusterCount][iSegment]->SetBinContent(7, segment->var_tx);
             hSegment_Members_Event[eventClusterCount][iSegment]->SetBinContent(8, segment->var_ty);
-            // cout << "TRD_online:Process() ... segment x = " << segment->x << ", y = " << segment->y << ", tx = " << segment->tx << ", ty = " << segment->ty << endl;
+            if (verboseNizarTrackMatching) cout << "TRD_online:Process() ... segment x = " << segment->x << ", y = " << segment->y << ", tx = " << segment->tx << ", ty = " << segment->ty << endl;
         }
-
-        //cout << eventClusterCount << ". Event " << eventnumber << " has " << clusters.size() << " clusters, " << segments.size() << " segments, " << tracks.size() << " tracks, " << iExtrapolation << " extrapolations at TRD" << endl;
+        if (verboseNizarTrackMatching) cout << eventClusterCount << ". Event " << eventnumber << " has " << clusters.size() << " clusters, " << segments.size() << " segments, " << tracks.size() << " tracks, " << iExtrapolation << " extrapolations at TRD" << endl;
+		} //--End if useNizarTrackMatching
         eventClusterCount++;
     }
-
+	
+	
+	if (useNizarTrackMatching) {
+	
     // Calculate efficiency of extrapolation to segment matching
     if (tracks.size()>0) {
         for (const auto& track : tracks) {
@@ -727,16 +719,20 @@ void JEventProcessor_TRD_online::Process(const std::shared_ptr<const JEvent>& ev
             if (extrapolations.size() == 0) continue;
             bool extrapolationFound = false;
             for (const auto& extrapolation : extrapolations) {
-                if ((extrapolation.position.x() < -83.47 || extrapolation.position.x() > -11.47) || 
-                    (extrapolation.position.y() < -68.6 || extrapolation.position.y() > -32.61)) continue;
+				if (runnumber<140000 && ((extrapolation.position.x() < -83.47 || extrapolation.position.x() > -11.47) ||
+                (extrapolation.position.y() < -68.6 || extrapolation.position.y() > -32.61))) continue; //Spring 2025 ECAL Commissioning Period
+            	else if (runnumber>140000 && ((extrapolation.position.x() < -70.39 || extrapolation.position.x() > -10.39) ||
+                (extrapolation.position.y() < -51.88 || extrapolation.position.y() > -25.48))) continue; //Spring 2026 Low Energy Running Period
+				
                 extrapolationFound = true;
                 NEventsTrack++;
                 break;                
             }
-            //if (extrapolationFound) cout << "extrapolationFound = " << extrapolationFound << ", points.size() = " << points.size() << endl;
+            if (verboseNizarTrackMatching) { if (extrapolationFound) cout << "extrapolationFound = " << extrapolationFound << ", points.size() = " << points.size() << endl;}
             if (points.size() > 0 && extrapolationFound) NEventsTrackSegmentMatch++;
         }
     }
+	} //--End if useNizarTrackMatching
 	
     lockService->RootFillUnLock(this); //RELEASE ROOT FILL LOCK
 	
@@ -755,6 +751,14 @@ void JEventProcessor_TRD_online::EndRun() {
 
 void JEventProcessor_TRD_online::Finish() {
     // Called before program exit after event processing is finished.
+	if (useNizarTrackMatching) {
+		cout << "NEventsTrackSegmentMatch = " << NEventsTrackSegmentMatch << endl;
+		cout << "NEventsTrack = " << NEventsTrack << endl;
+		if (NEventsTrack>0) {
+			cout << "Efficiency of extrapolation to segment matching = " 
+				<< double(NEventsTrackSegmentMatch)/double(NEventsTrack) << endl;
+		}
+	}
 }
 
 //----------------------------------------------------------------------------------
