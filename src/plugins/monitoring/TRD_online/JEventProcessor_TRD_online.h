@@ -19,9 +19,9 @@ private:
 
     std::shared_ptr<JLockService> lockService;
 
-    int wirePlaneOffset;
+    //int wirePlaneOffset;
     int eventClusterCount; ///< Counter for number of events processed for cluster monitoring
-    int eventPointCount; ///< Counter for number of events processed for point and segment monitoring
+    //int eventPointCount; ///< Counter for number of events processed for point and segment monitoring
     int NEventsTrackSegmentMatch;
     int NEventsTrack;
 };
