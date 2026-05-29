@@ -402,7 +402,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	event->Get(PSPair);
 	vector<const DL1Trigger*>Trig;
 	event->Get(Trig);
-	auto eventNumber = event->GetEventNumber();
+	//auto eventNumber = event->GetEventNumber();
 	auto runNumber = event->GetRunNumber();
 		
 	if (Trig.size()<1) return;
@@ -533,7 +533,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 		double extrap_FCALEnergy = 0.;
 		bool extrap_existsAtTRD = false;
         bool extrap_existsAtFCAL = false;
-        bool extrap_existsAtTOF = false;
+        //bool extrap_existsAtTOF = false;
         bool hyp_matchedToFCAL = false;
         bool hyp_matchedToTOF = false;
 		bool hasMinMomentum = false;
@@ -747,7 +747,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
         extrap_FCALEnergy = 0.;
         extrap_existsAtTRD = false;
         extrap_existsAtFCAL = false;
-        extrap_existsAtTOF = false;
+        //extrap_existsAtTOF = false;
         hyp_matchedToFCAL = false;
         hyp_matchedToTOF = false;
         hasMinMomentum = false;
@@ -912,7 +912,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 		
 		extrap_existsAtTRD = false;
 		extrap_existsAtFCAL = false;
-		extrap_existsAtTOF = false;
+		//extrap_existsAtTOF = false;
 		hyp_matchedToFCAL = false;
 		hyp_matchedToTOF = false;
 		hasMinMomentum = false;

@@ -58,6 +58,7 @@ void DTRDSegment_factory_extrapolation::Process(const std::shared_ptr<const JEve
   for (auto &track: tracks) {
     // just use the tracks with the electron mass hypothesis
     // maybe we should use the pion mass hypothesis though?
+    // Certainly this should not be set here and must be more dynamic...
     if( track->PID()!=Electron && track->PID()!=Positron )  continue;
     //if( track->PID()!=PiPlus && track->PID()!=PiMinus )  continue;
   
@@ -65,7 +66,8 @@ void DTRDSegment_factory_extrapolation::Process(const std::shared_ptr<const JEve
     vector<DTrackFitter::Extrapolation_t> extrapolations = track->extrapolations.at(SYS_TRD);
     if (extrapolations.size()==0) continue;
     DTrackFitter::Extrapolation_t extrapolation = extrapolations[0];
-
+	
+	//--This has changed with the 2026 run period!! Needs fixed!
     if ((extrapolations[0].position.x() < -83.47 || extrapolations[0].position.x() > -11.47) || 
         (extrapolations[0].position.y() < -68.6 || extrapolations[0].position.y() > -32.61)) continue;
     
@@ -83,7 +85,7 @@ void DTRDSegment_factory_extrapolation::Process(const std::shared_ptr<const JEve
     vector<const DTRDPoint *> segmentPoints;
     for (unsigned int i=0;i<trackPoints.size();i++){
       // cout << "TrackID: " << trackPoints[i].trackID << " x: " << trackPoints[i].point->x << " y: " << trackPoints[i].point->y << endl;
-      if (trackPoints[i].trackID==iSegmentPoint){
+      if (trackPoints[i].trackID==(int)iSegmentPoint){
         segmentPoints.push_back(trackPoints[i].point);
       }
     }
@@ -187,7 +189,7 @@ void DTRDSegment_factory_extrapolation::FitLine(const vector<const DTRDPoint *>&
 
 void DTRDSegment_factory_extrapolation::FindSegmentPoints(vector<TrackPoint> &trackPoints, vector<DTrackFitter::Extrapolation_t> &trackExtrapolations, double distToExtrp)
 {
-  for (int itrack=0;itrack<trackExtrapolations.size();itrack++){
+  for (long unsigned int itrack=0;itrack<trackExtrapolations.size();itrack++){
     DTrackFitter::Extrapolation_t extrapolation = trackExtrapolations[itrack];
     double x0 = extrapolation.position.x();
     double y0 = extrapolation.position.y();
