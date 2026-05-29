@@ -112,14 +112,14 @@ void JEventProcessor_TRDTrack::Init()
 	hExtrapXPointDiff=new TH1D("ExtrapXPointDiff","Track Extrap Difference from TRD Point_Hits, X Plane;x(Extrap) - x(TRD Point_Hit) [cm]",250,-5.5,5.5);
     hExtrapYPointDiff=new TH1D("ExtrapYPointDiff","Track Extrap Difference from TRD Point_Hits, Y Plane;y(Extrap) - y(TRD Point_Hit) [cm]",250,-5.5,5.5);
     hExtrapXYPointDiff=new TH2D("ExtrapXYPointDiff","2D Track Extrap Difference from TRD Point_Hits;x(Extrap) - x(TRD Point_Hit) [cm];y(Extrap) - y(TRD Point_Hit) [cm]",250,-5.5,5.5,250,-5.5,5.5);
-	hExtrapXPointDiffvsTime=new TH2D("ExtrapXPointDiffvsTime","Track Extrap Difference from TRD Point_Hits vs Drift Time, X Plane;x(Extrap) - x(TRD Point_Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,400,0.,200.*8);
-    hExtrapYPointDiffvsTime=new TH2D("ExtrapYPointDiffvsTime","Track Extrap Difference from TRD Point_Hits vs Drift Time, Y Plane;y(Extrap) - y(TRD Point_Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,400,0.,200.*8);
-	hExtrapXPointDiffvsX=new TH2D("ExtrapXPointDiffvsX","Track Extrap Difference from TRD Point_Hits vs Position, X Plane;x(Extrap) - x(TRD Point_Hit) [cm]; x(TRD Point_Hit) [cm]",250,-5.5,5.5,750,-85.,-10.);
-    hExtrapYPointDiffvsY=new TH2D("ExtrapYPointDiffvsY","Track Extrap Difference from TRD Point_Hits vs Position, Y Plane;y(Extrap) - y(TRD Point_Hit);y(TRD Point_Hit) [cm]",250,-5.5,5.5,400,-70.,-30.);
+	hExtrapXPointDiffvsTime=new TH2D("ExtrapXPointDiffvsTime","Track Extrap Difference from TRD Point_Hits vs Drift Time, X Plane;x(Extrap) - x(TRD Point_Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
+    hExtrapYPointDiffvsTime=new TH2D("ExtrapYPointDiffvsTime","Track Extrap Difference from TRD Point_Hits vs Drift Time, Y Plane;y(Extrap) - y(TRD Point_Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
+	hExtrapXPointDiffvsX=new TH2D("ExtrapXPointDiffvsX","Track Extrap Difference from TRD Point_Hits vs Position, X Plane;x(Extrap) - x(TRD Point_Hit) [cm]; x(TRD Point_Hit) [cm]",250,-5.5,5.5,450,-90.,0.);
+    hExtrapYPointDiffvsY=new TH2D("ExtrapYPointDiffvsY","Track Extrap Difference from TRD Point_Hits vs Position, Y Plane;y(Extrap) - y(TRD Point_Hit);y(TRD Point_Hit) [cm]",250,-5.5,5.5,450,-90.,0.);
 	
 		
 	//--Plots for TRD Hit objects
-	hExtrapXHitDiffvsTime=new TH2D("ExtrapXHitDiffvsTime","Track Extrap Difference from TRD Hits vs Drift Time, X Plane;x(Extrap) - x(TRD Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,400,0.,200.*8);
+	hExtrapXHitDiffvsTime=new TH2D("ExtrapXHitDiffvsTime","Track Extrap Difference from TRD Hits vs Drift Time, X Plane;x(Extrap) - x(TRD Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
 	hExtrapYHitDiffvsTime=new TH2D("ExtrapYHitDiffvsTime","Track Extrap Difference from TRD Hits vs Drift Time, Y Plane;y(Extrap) - y(TRD Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
 	hResXHitDiffvsTime=new TH2D("ResXHitDiffvsTime","Track Extrap X Difference from TRD Hits vs Drift Time;x(Extrap) - x(TRD Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
     hResYHitDiffvsTime=new TH2D("ResYHitDiffvsTime","Track Extrap Y Difference from TRD Hits vs Drift Time;y(Extrap) - y(TRD Hit) [cm]; 8*(Peak Time) [ns]",250,-5.5,5.5,200,0.,200.*8);
@@ -142,9 +142,9 @@ void JEventProcessor_TRDTrack::Init()
 	hFCALTimeCorr=new TH2D("FCALTimeCorr","Time Corr. Between FCAL Shower Time and FCAL_Track_Match Flight Time;Time (FCAL Shower) [ns];Time (Track Flight Time) [ns]",210,-6.,99.,210,-6.,99.);
 	hFCALExtrapE_TRD=new TH1D("FCALExtrapE_TRD","FCAL Shower Energy with Track Extrap through TRD;E [GeV]",240,-0.1,11.9);
     hFCALExtrapEP_TRD=new TH1D("FCALExtrapEP_TRD","FCAL E/P with Track Extrap through TRD;(FCAL Shower E) / (Track Extrap P_Mag)",300,-0.1,2.9);
-    hFCALExtrapEPvsP_TRD=new TH2D("FCALExtrapEPvsP_TRD","FCAL E/P vs P with Track Extrap through TRD;(FCAL Shower E) / (Track Extrap P_Mag); (Track Extrap P_Mag) [GeV/c]",300,-0.1,2.9,240,-0.1,11.9);
+    hFCALExtrapEPvsP_TRD=new TH2D("FCALExtrapEPvsP_TRD","FCAL E/P vs P with Track Extrap through TRD;(FCAL Shower E) / (Track Extrap P_Mag); (Track Extrap P_Mag) [GeV/c]",150,-0.1,2.9,120,-0.1,11.9);
 	hFCALExtrapTheta_TRD=new TH1D("FCALExtrapTheta_TRD","FCAL Track Extrap Angle at FCAL Z Plane (with Extrap through TRD);Theta [Degrees]",350,-0.1,34.9);
-    hFCALExtrapThetavsP_TRD=new TH2D("FCALExtrapThetavsP_TRD","FCAL Track Extrap Angle (at FCAL Z Plane) vs P (with Extrap through TRD);Theta [Degrees];(Track Extrap P_Mag) [GeV/c]",350,-0.1,34.9,480,-0.1,11.9);
+    hFCALExtrapThetavsP_TRD=new TH2D("FCALExtrapThetavsP_TRD","FCAL Track Extrap Angle (at FCAL Z Plane) vs P (with Extrap through TRD);Theta [Degrees];(Track Extrap P_Mag) [GeV/c]",175,-0.1,34.9,120,-0.1,11.9);
 	
 	//--Plots for Efficiency estimates
 	hnumPointsSeen=new TH1D("numPointsSeen","N Point_Hits within +/-1.5cm of a Track Extrap that Passed Through TRD; # Point_Hits",35,-0.5,34.5);
@@ -523,6 +523,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	hTrackMult->Fill(tracks.size());
   	for (unsigned int j=0; j<tracks.size(); j++) {
 		
+		numTracks++;
 		bool passedThroughTRD = false;
 		bool TrackMatch = false;
 		bool hitTrackMatchX = false;
@@ -695,9 +696,9 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
                                 hHit_DriftTime_X[NEvents/20000]->Fill(hit->t);
                             }
                         }
-                        if (hit->plane == 1) {
+                        if (hit->plane == 1 && passedThroughTRD) {
                             hExtrapXHitDiffvsTime->Fill(trd_extrapolations[0].position.x() - newX, hit->t);
-                            if (trd_extrapolations[0].position.x() > -10.) hResXHitDiffvsTime->Fill(trd_extrapolations[0].position.x() - newX, hit->t);
+                            hResXHitDiffvsTime->Fill(trd_extrapolations[0].position.x() - newX, hit->t);
                             hResXHitDiff_Corrected->Fill((trd_extrapolations[0].position.x() - newX)-((hit->t - 473.197)/165.83));
                         }
                         if (hit->plane == 2 && abs(trd_extrapolations[0].position.y() - newY) <= 1.8) { //if within 1.8cm
@@ -714,9 +715,9 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
                                 hHit_DriftTime_Y[NEvents/20000]->Fill(hit->t);
                             }
                         }
-                        if (hit->plane == 2) {
+                        if (hit->plane == 2 && passedThroughTRD) {
                             hExtrapYHitDiffvsTime->Fill(trd_extrapolations[0].position.y() - newY, hit->t);
-                            if (trd_extrapolations[0].position.y() > -55.) hResYHitDiffvsTime->Fill(trd_extrapolations[0].position.y() - newY, hit->t);
+                            hResYHitDiffvsTime->Fill(trd_extrapolations[0].position.y() - newY, hit->t);
                             hResYHitDiff_Corrected->Fill((trd_extrapolations[0].position.y() - newY)-((hit->t - 558.016)/439.767));
                         }
                     } //--END Hits Loop
@@ -1070,25 +1071,30 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 
 	if (numTracks>0) { Count("nTrack"); Count_el("nTrack"); Count_pi("nTrack"); }
 	
+	//--Best Hyp
 	if (goodFCALTrack>0) Count("goodTrackThruFCAL");
 	if (extrapToFCAL>0) Count("extrapToFCAL");
-	if (extrapToFCAL_el>0) Count_el("extrapToFCAL");
-	if (extrapToFCAL_pi>0) Count_pi("extrapToFCAL");
-	if (hasMinMom>0) Count("minMomOK");
-	if (hasMinMom>0) Count_el("minMomOK");
-	if (hasMinMom>0) Count_pi("minMomOK");
 	if (matchedToTOF>0) Count("matchedToTOF");
-	if (matchedToTOF_el>0) Count_el("matchedToTOF");
-	if (matchedToTOF_pi>0) Count_pi("matchedToTOF");
+	if (hasMinMom>0) Count("minMomOK");
 	if (extrapInTRD>0) Count("ExtrapThruTRD");
 	if (extrapInTRD_good>0) Count("GoodExtrapThruTRD");
-	if (extrapInTRD_goodEl>0) Count_el("GoodExtrapThruTRD");
-	if (extrapInTRD_goodPi>0) Count_pi("GoodExtrapThruTRD");
 	if (singleSeenExtrap>0) Count("GoodExtrapSeenByTRD");
-	if (singleSeenExtrapHit>0) Count("GoodExtrapSeenByTRD_Hits");
+	//if (singleSeenExtrapHit>0) Count("GoodExtrapSeenByTRD_Hits");
+	
+	//--e+/e- Hyp
+	if (extrapToFCAL_el>0) Count_el("extrapToFCAL");
+	if (matchedToTOF_el>0) Count_el("matchedToTOF");
+	if (hasMinMom_el>0) Count_el("minMomOK");
 	if (extrapInTRD_el>0) Count_el("ExtrapThruTRD");
+	if (extrapInTRD_goodEl>0) Count_el("GoodExtrapThruTRD");
 	if (singleSeenExtrap_el>0) Count_el("GoodExtrapSeenByTRD");
+	
+	//--pi+/pi- Hyp
+	if (extrapToFCAL_pi>0) Count_pi("extrapToFCAL");
+	if (matchedToTOF_pi>0) Count_pi("matchedToTOF");
+	if (hasMinMom_pi>0) Count_pi("minMomOK");
 	if (extrapInTRD_pi>0) Count_pi("ExtrapThruTRD");
+	if (extrapInTRD_goodPi>0) Count_pi("GoodExtrapThruTRD");
     if (singleSeenExtrap_pi>0) Count_pi("GoodExtrapSeenByTRD");
 	
   	lockService->RootFillUnLock(this); //RELEASE ROOT FILL LOCK
