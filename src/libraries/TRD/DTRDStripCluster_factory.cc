@@ -61,12 +61,12 @@ void DTRDStripCluster_factory::Init()
     app->SetDefaultParameter("TRDCLUSTER:CLUSTERING_THRESHOLD",CLUSTERING_THRESHOLD);
 
 	eps = 3.0;
-	minPts = 1;
+	minPts = 2;
 	min_total_q = 0.0;
 	max_pos_width = 8.0;
 
-	app->SetDefaultParameter("TRDCLUSTER:DBSCAN_EPS",eps,"DBSCAN epsilon value (default: 20.0)");
-	app->SetDefaultParameter("TRDCLUSTER:DBSCAN_MINPTS",minPts,"DBSCAN minimum number of points (default: 6)");
+	app->SetDefaultParameter("TRDCLUSTER:DBSCAN_EPS",eps,"DBSCAN epsilon value (default: 3.0)");
+	app->SetDefaultParameter("TRDCLUSTER:DBSCAN_MINPTS",minPts,"DBSCAN minimum number of points (default: 2)");
 	app->SetDefaultParameter("TRDCLUSTER:MIN_TOTAL_Q",min_total_q,"Minimum total energy for a cluster (default: 0.0)");
 	app->SetDefaultParameter("TRDCLUSTER:MAX_POS_WIDTH",max_pos_width,"Maximum position width for a cluster (default: 8.0)");
 
