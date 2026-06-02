@@ -28,18 +28,8 @@ void DTRDSegment_factory_extrapolation::Init()
 void DTRDSegment_factory_extrapolation::BeginRun(const std::shared_ptr<const JEvent>& event) 
 { 
 	
-  auto runNumber = event->GetRunNumber();
-  auto app = event->GetJApplication();
-  auto geo_manager = app->GetService<DGeometryManager>();
-  auto dgeom = geo_manager->GetDGeometry(runNumber);
-  dgeom->GetGEMTRDz(dTRDz);
-  
-  vector<double>xvec,yvec;
-  if(dgeom->GetGEMTRDxy_vec(xvec,yvec)){
-    dTRDx=xvec[0];
-    dTRDy=yvec[0];
-  }
-  
+  DGeometry *geom = DEvent::GetDGeometry(event);
+  geom->GetGEMTRDz(dTRDz);
   return;
 }
 

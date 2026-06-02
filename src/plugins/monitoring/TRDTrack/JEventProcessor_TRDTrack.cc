@@ -260,7 +260,7 @@ void JEventProcessor_TRDTrack::Init()
 	//efficiency array plots
 	trdDir->cd();
 	gDirectory->mkdir("Time-Based_Efficiency")->cd();
-
+	
 	hDL1Time=new TH1D("DL1Time","DL1Trigger Time; 4*(Peak Time) [s]",160,0.,160.);
 	hPSPairTime=new TH1D("PSPairTime","PS Identified Pair Trigger Time; 4*(Peak Time) [ns]",400,0.,400.);
 	
@@ -340,18 +340,18 @@ void JEventProcessor_TRDTrack::Init()
 	for (unsigned int i=0; i<=100; i++) {
 		if (PlotEfficienciesOverTime) {
 	    hSeenHitsSingleX_fine[i] = new TH1F(Form("seenHitsSingleX_fine_%i", i+1),
-                                    Form("Single Hit X Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),75,-85.,-10.);
+                                    Form("Single Hit X Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
 		hSeenHitsSingleY_fine[i] = new TH1F(Form("seenHitsSingleY_fine_%i", i+1),
-                                    Form("Single Hit Y Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),40,-70.,-30.);
+                                    Form("Single Hit Y Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
 		}
 		hSeenPointsSingleX_fine[i] = new TH1F(Form("seenPointsSingleX_fine_%i", i+1),
-                                    Form("Single Point X Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),75,-85.,-10.);
+                                    Form("Single Point X Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
     	hSeenPointsSingleY_fine[i] = new TH1F(Form("seenPointsSingleY_fine_%i", i+1),
-                                    Form("Single Point Y Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),40,-70.,-30.);
+                                    Form("Single Point Y Display for Track Extraps Seen in TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
 		hExtrapsX_fine[i] = new TH1F(Form("ExtrapsX_fine_%i", i+1),
-                                    Form("Track X Extrapolations that Pass Through TRD (%i - %i)",i*20000,(i+1)*20000),75,-85.,-10.);
+                                    Form("Track X Extrapolations that Pass Through TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
     	hExtrapsY_fine[i] = new TH1F(Form("ExtrapsY_fine_%i", i+1),
-                                    Form("Track X Extrapolations that Pass Through TRD (%i - %i)",i*20000,(i+1)*20000),40,-70.,-30.);
+                                    Form("Track X Extrapolations that Pass Through TRD (%i - %i)",i*20000,(i+1)*20000),90,-90.,0.);
 		if (PlotEfficienciesOverTime) {
 		hHit_PulseHeight_X[i] = new TH1F(Form("Hit_PulseHeight_X%i", i+1),
                                     Form("GEMTRD X Plane Pulse Height (%i - %i); Pulse Height [fADC Units]",i*20000,(i+1)*20000),350,0.,3500.);
@@ -409,7 +409,7 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	NEvents++;
   	lockService->RootFillLock(this); //ACQUIRE ROOT FILL LOCK
 	
-	int numTracks=0, extrapInTRD=0, goodFCALTrack=0, extrapInTRD_good=0, extrapInTRD_goodEl=0, extrapInTRD_goodPi=0, singleSeenExtrap=0,  singleSeenExtrapHit=0, singleSeenExtrap_el=0, extrapInTRD_el=0, singleSeenExtrap_pi=0, extrapInTRD_pi=0, extrapToFCAL=0, extrapToFCAL_el=0, extrapToFCAL_pi=0, hasMinMom=0, hasMinMom_el=0, hasMinMom_pi=0, matchedToTOF=0, matchedToTOF_el=0, matchedToTOF_pi=0;
+	int numTracks=0, extrapInTRD=0, goodFCALTrack=0, extrapInTRD_good=0, extrapInTRD_goodEl=0, extrapInTRD_goodPi=0, singleSeenExtrap=0,  singleSeenExtrapHit=0, singleSeenExtrap_el=0, extrapInTRD_el=0, singleSeenExtrap_pi=0, extrapInTRD_pi=0, extrapToFCAL=0, extrapToFCAL_el=0, extrapToFCAL_pi=0, hasMinMom=0, hasMinMom_el=0, hasMinMom_pi=0, matchedToTOF=0, matchedToTOF_el=0, matchedToTOF_pi=0, extrapToECAL=0, extrapToTOF=0, extrapToTRD=0, extrapToECAL_el=0, extrapToTOF_el=0, extrapToTRD_el=0, extrapToECAL_pi=0, extrapToTOF_pi=0, extrapToTRD_pi=0;
 	
 	// ======================================================
 	//				Efficiency vs Time Graphs
@@ -534,7 +534,8 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 		double extrap_FCALEnergy = 0.;
 		bool extrap_existsAtTRD = false;
         bool extrap_existsAtFCAL = false;
-        //bool extrap_existsAtTOF = false;
+		bool extrap_existsAtECAL = false;
+        bool extrap_existsAtTOF = false;
         bool hyp_matchedToFCAL = false;
         bool hyp_matchedToTOF = false;
 		bool hasMinMomentum = false;
@@ -555,14 +556,22 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
             const DTrackTimeBased *time_track=best_hyp->Get_TrackTimeBased();
             vector<DTrackFitter::Extrapolation_t> trd_extrapolations = time_track->extrapolations.at(SYS_TRD);
             vector<DTrackFitter::Extrapolation_t> fcal_extrapolations = time_track->extrapolations.at(SYS_FCAL);
+			vector<DTrackFitter::Extrapolation_t> ecal_extrapolations = time_track->extrapolations.at(SYS_ECAL);
+			vector<DTrackFitter::Extrapolation_t> tof_extrapolations = time_track->extrapolations.at(SYS_TOF);
 
             if (fcal_extrapolations.size()>0) extrap_existsAtFCAL = true;
+			if (ecal_extrapolations.size()>0) extrap_existsAtECAL = true;
+			if (tof_extrapolations.size()>0) extrap_existsAtTOF = true;
             if (trd_extrapolations.size()>0) extrap_existsAtTRD = true;
             if (fcalparms!=nullptr) hyp_matchedToFCAL = true;
             if (tofparms!=nullptr) { hyp_matchedToTOF = true; matchedToTOF++; }
 			
-			if (extrap_existsAtFCAL && extrap_existsAtTRD) {
-				extrapToFCAL++;
+			if (extrap_existsAtTRD) {
+				extrapToTRD++;
+				if (extrap_existsAtECAL) extrapToECAL++;
+				if (extrap_existsAtTOF) extrapToTOF++;
+				if (extrap_existsAtFCAL) extrapToFCAL++;
+				if (extrap_existsAtFCAL || extrap_existsAtECAL) {
 				if (runNumber<140000) { //Spring 2025 ECAL Commissioning Period
                     if ((trd_extrapolations[0].position.x() > -83.47) && (trd_extrapolations[0].position.x() < -11.47) && (trd_extrapolations[0].position.y() > -68.6) && (trd_extrapolations[0].position.y() < -32.61)) {
                         passedThroughTRD = true;
@@ -731,7 +740,8 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 					} //end PlotEfficienciesOverTime
                 } //--END passedThroughTRD
                 } //--END hasMinMomentum & hyp_matchedToTOF
-            } //--END if extrap_existsAtFCAL && extrap_existsAtTRD
+            } //--END if extrap_existsAt FCAL || ECAL
+			} //--END if extrap_existsAtTRD
 		} //--END using Best track hypothesis
 		
 		//--END MISC. MONITORING FOLDER ------------------------------------------------
@@ -748,7 +758,8 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
         extrap_FCALEnergy = 0.;
         extrap_existsAtTRD = false;
         extrap_existsAtFCAL = false;
-        //extrap_existsAtTOF = false;
+		extrap_existsAtECAL = false;
+        extrap_existsAtTOF = false;
         hyp_matchedToFCAL = false;
         hyp_matchedToTOF = false;
         hasMinMomentum = false;
@@ -762,13 +773,21 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 			const DTrackTimeBased *time_track=hyp_el->Get_TrackTimeBased();
 			vector<DTrackFitter::Extrapolation_t> trd_extrapolations = time_track->extrapolations.at(SYS_TRD);
         	vector<DTrackFitter::Extrapolation_t> fcal_extrapolations = time_track->extrapolations.at(SYS_FCAL);
+			vector<DTrackFitter::Extrapolation_t> ecal_extrapolations = time_track->extrapolations.at(SYS_ECAL);
+			vector<DTrackFitter::Extrapolation_t> tof_extrapolations = time_track->extrapolations.at(SYS_TOF);
 			if (fcal_extrapolations.size()>0) extrap_existsAtFCAL = true;
+			if (tof_extrapolations.size()>0) extrap_existsAtTOF = true;
+			if (ecal_extrapolations.size()>0) extrap_existsAtECAL = true;
             if (trd_extrapolations.size()>0) extrap_existsAtTRD = true;
             if (fcalparms!=nullptr) hyp_matchedToFCAL = true;
             if (tofparms!=nullptr) { hyp_matchedToTOF = true; matchedToTOF_el++; }
 			
-			if (extrap_existsAtFCAL && extrap_existsAtTRD) {
-				extrapToFCAL_el++;
+			if (extrap_existsAtTRD) {
+				extrapToTRD_el++;
+				if (extrap_existsAtFCAL) extrapToFCAL_el++;
+				if (extrap_existsAtECAL) extrapToECAL_el++;
+				if (extrap_existsAtTOF) extrapToTOF_el++;
+				if (extrap_existsAtFCAL || extrap_existsAtECAL) {
 				if (runNumber<140000) { //Spring 2025 ECAL Commissioning Period
                     if ((trd_extrapolations[0].position.x() > -83.47) && (trd_extrapolations[0].position.x() < -11.47) && (trd_extrapolations[0].position.y() > -68.6) && (trd_extrapolations[0].position.y() < -32.61)) {
                         passedThroughTRD = true;
@@ -798,7 +817,8 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 						extrapSeenByFCAL = true;
 					}
 				} //--END hyp_matchedToFCAL
-			} //--END if extrap_existsAtFCAL && extrap_existsAtTRD
+				} //--END if extrap_existsAt FCAL || ECAL
+			} //--END if extrap_existsAtTRD
 				
 			if (hasMinMomentum && hyp_matchedToTOF && passedThroughTRD) {
 					extrapInTRD_goodEl++;
@@ -910,10 +930,10 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 		isEnergetic = false;
 		extrapSeenByFCAL = false;
         extrap_FCALEnergy = 0.;
-		
+		extrap_existsAtECAL = false;
 		extrap_existsAtTRD = false;
 		extrap_existsAtFCAL = false;
-		//extrap_existsAtTOF = false;
+		extrap_existsAtTOF = false;
 		hyp_matchedToFCAL = false;
 		hyp_matchedToTOF = false;
 		hasMinMomentum = false;
@@ -925,14 +945,21 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 			const DTrackTimeBased *time_track=hyp_pi->Get_TrackTimeBased();
             vector<DTrackFitter::Extrapolation_t> trd_extrapolations = time_track->extrapolations.at(SYS_TRD);
 			vector<DTrackFitter::Extrapolation_t> fcal_extrapolations = time_track->extrapolations.at(SYS_FCAL);
-			
+			vector<DTrackFitter::Extrapolation_t> ecal_extrapolations = time_track->extrapolations.at(SYS_ECAL);
+			vector<DTrackFitter::Extrapolation_t> tof_extrapolations = time_track->extrapolations.at(SYS_TOF);
 			if (fcal_extrapolations.size()>0) extrap_existsAtFCAL = true;
 			if (trd_extrapolations.size()>0) extrap_existsAtTRD = true;
+			if (ecal_extrapolations.size()>0) extrap_existsAtECAL = true;
+			if (tof_extrapolations.size()>0) extrap_existsAtTOF = true;
 			if (fcalparms!=nullptr) hyp_matchedToFCAL = true;
 			if (tofparms!=nullptr) { hyp_matchedToTOF = true; matchedToTOF_pi++; }
 			
-			if (extrap_existsAtFCAL && extrap_existsAtTRD) {
-				extrapToFCAL_pi++;
+			if (extrap_existsAtTRD) {
+				extrapToTRD_pi++;
+				if (extrap_existsAtFCAL) extrapToFCAL_pi++;
+				if (extrap_existsAtECAL) extrapToECAL_pi++;
+				if (extrap_existsAtTOF) extrapToTOF_pi++;
+				if (extrap_existsAtFCAL || extrap_existsAtECAL) {
 				if (runNumber<140000) { //Spring 2025 ECAL Commisioning Period
 					if ((trd_extrapolations[0].position.x() > -83.47) && (trd_extrapolations[0].position.x() < -11.47) && (trd_extrapolations[0].position.y() > -68.6) && (trd_extrapolations[0].position.y() < -32.61)) {
                     	passedThroughTRD = true;
@@ -962,7 +989,8 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
                 		isEnergetic = true;
                 	}
 				} //--END hyp_matchedToFCAL
-			} //--END if extrap_existsAtFCAL && extrap_existsAtTRD
+				} //--END if extrap_existsAt FCAL || ECAL
+			} //--END if extrap_existsAtTRD
 				
 			if (hasMinMomentum && hyp_matchedToTOF && passedThroughTRD) {
 					extrapInTRD_goodPi++;
@@ -1072,8 +1100,11 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	if (numTracks>0) { Count("nTrack"); Count_el("nTrack"); Count_pi("nTrack"); }
 	
 	//--Best Hyp
-	if (goodFCALTrack>0) Count("goodTrackThruFCAL");
-	if (extrapToFCAL>0) Count("extrapToFCAL");
+	//if (goodFCALTrack>0) Count("goodTrackThruFCAL");
+	if (extrapToTRD>0) Count("extrapToTRDz");
+	if (extrapToTOF>0) Count("extrapToTOFz");
+	if (extrapToFCAL>0) Count("extrapToFCALz");
+	if (extrapToECAL>0) Count("extrapToECALz");
 	if (matchedToTOF>0) Count("matchedToTOF");
 	if (hasMinMom>0) Count("minMomOK");
 	if (extrapInTRD>0) Count("ExtrapThruTRD");
@@ -1082,7 +1113,10 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	//if (singleSeenExtrapHit>0) Count("GoodExtrapSeenByTRD_Hits");
 	
 	//--e+/e- Hyp
-	if (extrapToFCAL_el>0) Count_el("extrapToFCAL");
+	if (extrapToTRD_el>0) Count_el("extrapToTRDz");
+    if (extrapToTOF_el>0) Count_el("extrapToTOFz");
+    if (extrapToFCAL_el>0) Count_el("extrapToFCALz");
+	if (extrapToECAL_el>0) Count_el("extrapToECALz");
 	if (matchedToTOF_el>0) Count_el("matchedToTOF");
 	if (hasMinMom_el>0) Count_el("minMomOK");
 	if (extrapInTRD_el>0) Count_el("ExtrapThruTRD");
@@ -1090,7 +1124,10 @@ void JEventProcessor_TRDTrack::Process(const std::shared_ptr<const JEvent> &even
 	if (singleSeenExtrap_el>0) Count_el("GoodExtrapSeenByTRD");
 	
 	//--pi+/pi- Hyp
-	if (extrapToFCAL_pi>0) Count_pi("extrapToFCAL");
+	if (extrapToTRD_pi>0) Count_pi("extrapToTRDz");
+    if (extrapToTOF_pi>0) Count_pi("extrapToTOFz");
+    if (extrapToFCAL_pi>0) Count_pi("extrapToFCALz");
+	if (extrapToECAL_pi>0) Count_pi("extrapToECALz");
 	if (matchedToTOF_pi>0) Count_pi("matchedToTOF");
 	if (hasMinMom_pi>0) Count_pi("minMomOK");
 	if (extrapInTRD_pi>0) Count_pi("ExtrapThruTRD");

@@ -16,7 +16,8 @@ private:
     void Process(const std::shared_ptr<const JEvent>& event) override;
     void EndRun() override;
     void Finish() override;
-
+	double dTRDx=0.,dTRDy=0.,dTRDz=0.;
+	
     std::shared_ptr<JLockService> lockService;
 
     //int wirePlaneOffset;
