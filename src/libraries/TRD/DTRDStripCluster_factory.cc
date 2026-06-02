@@ -54,8 +54,8 @@ void DTRDStripCluster_factory::Init()
 {
 	auto app = GetApplication();
 
-	MINIMUM_HITS_FOR_CLUSTERING = 10;
-    app->SetDefaultParameter("TRDCLUSTER:MINIMUM_HITS_FOR_CLUSTERING",MINIMUM_HITS_FOR_CLUSTERING);
+	MINIMUM_HITS_FOR_CLUSTERING = 6;
+    app->SetDefaultParameter("TRDCLUSTER:MINIMUM_HITS_FOR_CLUSTERING",MINIMUM_HITS_FOR_CLUSTERING,"Minimum total Hits for a cluster (default: 6.0)");
 
 	CLUSTERING_THRESHOLD = 1.2;
     app->SetDefaultParameter("TRDCLUSTER:CLUSTERING_THRESHOLD",CLUSTERING_THRESHOLD);
@@ -172,10 +172,13 @@ void DTRDStripCluster_factory::Process(const std::shared_ptr<const JEvent>& even
 				new_cluster->t_max = p_max_q.x;
 
 				double pos_width = GetClusterPosWidth(points, iClusterId);
-				if (pos_width > max_pos_width) {
+				if (pos_width > max_pos_width || pos_width==0) {
 					continue;
 				}
 				double time_width = GetClusterTimeWidth(points, iClusterId);
+				if (time_width==0) {
+                    continue;
+                }
 				new_cluster->pos_width = pos_width;
 				new_cluster->time_width = time_width;
 
