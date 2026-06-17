@@ -23,7 +23,6 @@ using namespace std;
 
 #include <TROOT.h>
 
-
 //------------------
 // CDCSortByRincreasing
 //------------------
@@ -575,17 +574,14 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
             // Add hits used as associated objects
             vector<const DCDCTrackHit*> cdchits = fitter->GetCDCFitHits();
             vector<const DFDCPseudo*> fdchits = fitter->GetFDCFitHits();
-            sort(cdchits.begin(), cdchits.end(), CDCSortByRincreasing);
-            sort(fdchits.begin(), fdchits.end(), FDCSortByZincreasing);
+	    track->NumFDC=fdchits.size();
+	    track->NumCDC=cdchits.size();
             for(unsigned int m=0; m<cdchits.size(); m++)track->AddAssociatedObject(cdchits[m]);
             for(unsigned int m=0; m<fdchits.size(); m++)track->AddAssociatedObject(fdchits[m]);
 
 	    // Set CDC ring & FDC plane hit patterns before candidate tracks are associated
-	    vector<const DCDCTrackHit*> tempCDCTrackHits = track->Get<DCDCTrackHit>();
-	    vector<const DFDCPseudo*> tempFDCPseudos = track->Get<DFDCPseudo>();
-
-	    track->dCDCRings = dPIDAlgorithm->Get_CDCRingBitPattern(tempCDCTrackHits);
-	    track->dFDCPlanes = dPIDAlgorithm->Get_FDCPlaneBitPattern(tempFDCPseudos);
+	    track->dCDCRings = dPIDAlgorithm->Get_CDCRingBitPattern(cdchits);
+	    track->dFDCPlanes = dPIDAlgorithm->Get_FDCPlaneBitPattern(fdchits);
 
             // Add DTrackCandidate as associated object
             track->AddAssociatedObject(candidate);
@@ -675,6 +671,8 @@ void DTrackWireBased_factory::AddMissingTrackHypothesis(vector<DTrackWireBased*>
   wirebased_track->candidateid=src_track->candidateid;
   wirebased_track->FOM=src_track->FOM;
   wirebased_track->IsSmoothed=src_track->IsSmoothed;
+  wirebased_track->NumFDC=src_track->NumFDC;
+  wirebased_track->NumCDC=src_track->NumCDC;
   wirebased_track->dCDCRings=src_track->dCDCRings;
   wirebased_track->dFDCPlanes=src_track->dFDCPlanes;
 
