@@ -880,30 +880,17 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
 				    const std::shared_ptr<const JEvent>&event,
 				    double mass){  
   if(DEBUG_LEVEL>1){_DBG__;_DBG_<<"---- Starting time based fit with mass: "<<mass<<endl;}
-  // Get the hits from the wire-based track
-  vector<const DFDCPseudo*>myfdchits;
-  track->GetT(myfdchits);
-  vector<const DCDCTrackHit *>mycdchits;
-  track->GetT(mycdchits);
-
+  
   // Do the fit
   DTrackFitter::fit_status_t status = DTrackFitter::kFitNotDone;
   if (USE_HITS_FROM_WIREBASED_FIT) {
-    fitter->Reset();
-    fitter->SetFitType(DTrackFitter::kTimeBased);	
-    
-    fitter->AddHits(myfdchits);
-    fitter->AddHits(mycdchits);
-
-    status=fitter->FitTrack(track->position(),track->momentum(),
-			    track->charge(),mass,mStartTime,mStartDetector);
+    status=FitWithWireBasedHits(track,mass);
   }   
   else{   
     fitter->Reset();
-    fitter->SetFitType(DTrackFitter::kTimeBased);    
+    fitter->SetFitType(DTrackFitter::kTimeBased);
     status = fitter->FindHitsAndFitTrack(*track, track->extrapolations,event, 
-					 mass,
-					 mycdchits.size()+2*myfdchits.size(),
+					 mass,track->Ndof+5,
 					 mStartTime,mStartDetector);
     
     // If the status is kFitNotDone, then not enough hits were attached to this
@@ -911,13 +898,7 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
     // from the wire-based track
     if (status==DTrackFitter::kFitNotDone){
       //_DBG_ << " Using wire-based hits " << endl;
-      fitter->Reset();
-      fitter->SetFitType(DTrackFitter::kTimeBased);   
-      fitter->AddHits(myfdchits);
-      fitter->AddHits(mycdchits);
-      
-      status=fitter->FitTrack(track->position(),track->momentum(),
-			      track->charge(),mass,mStartTime,mStartDetector);
+      status=FitWithWireBasedHits(track,mass);
     }
 
   }
@@ -935,11 +916,12 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
   // wire-based fit result.  In this case set the status word to 
   // kFitNoImprovement and copy the wire-based parameters into the time-based
   // class.
-  if (myfdchits.size()>3 && mycdchits.size()>3){
+  if (track->NumFDC>3 && track->NumCDC>3){
     unsigned int ndof=fitter->GetNdof();
     if (TMath::Prob(track->chisq,track->Ndof)>
-	TMath::Prob(fitter->GetChisq(),ndof)&&ndof<5)
+	TMath::Prob(fitter->GetChisq(),ndof)&&ndof<5){
       status=DTrackFitter::kFitNoImprovement;
+    }
   }
       
   // Check the status value from the fit
@@ -950,6 +932,12 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
     break;
   case DTrackFitter::kFitNoImprovement:
     {
+      // Get the hits from the wire-based track
+      vector<const DFDCPseudo*>myfdchits;
+      track->GetT(myfdchits);
+      vector<const DCDCTrackHit *>mycdchits;
+      track->GetT(mycdchits);
+      
       // Create a new time-based track object
       MakeTimeBasedFromWireBased(myfdchits,mycdchits,start_times,track);
       return true;
@@ -1476,4 +1464,23 @@ void DTrackTimeBased_factory::MakeTimeBasedFromWireBased(vector<const DFDCPseudo
   timebased_track->AddAssociatedObject(track);
   
   Insert(timebased_track);
+}
+
+DTrackFitter::fit_status_t
+DTrackTimeBased_factory::FitWithWireBasedHits(const DTrackWireBased *track,
+					      double mass){
+  // Get the hits from the wire-based track
+  vector<const DFDCPseudo*>myfdchits;
+  track->GetT(myfdchits);
+  vector<const DCDCTrackHit *>mycdchits;
+  track->GetT(mycdchits);
+
+  fitter->Reset();
+  fitter->SetFitType(DTrackFitter::kTimeBased);
+
+  fitter->AddHits(myfdchits);
+  fitter->AddHits(mycdchits);
+
+  return fitter->FitTrack(track->position(),track->momentum(),
+			  track->charge(),mass,mStartTime,mStartDetector);
 }

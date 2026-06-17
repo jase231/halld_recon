@@ -97,6 +97,8 @@ class DTrackTimeBased_factory:public JFactoryT<DTrackTimeBased>{
 				  vector<DTrackTimeBased::DStartTime_t>&start_times,
 				  const DTrackWireBased*track
 				  );
+  DTrackFitter::fit_status_t FitWithWireBasedHits(const DTrackWireBased *track,
+						  double mass);
 
   // Geometry
   const DGeometry *geom;
