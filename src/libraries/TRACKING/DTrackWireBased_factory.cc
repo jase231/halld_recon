@@ -291,6 +291,7 @@ void DTrackWireBased_factory::Process(const std::shared_ptr<const JEvent>& event
       double min_dphi=1e9;
       double phi=candidate->dPosition.Phi();
       double t0=candidate->dMinimumDriftTime;
+      double t0_sigma=2.5; // crude estimate
       unsigned int sc_hit_index=0;
       if (haveStartCounter){
 	for (unsigned int j=0;j<schits.size();j++){
@@ -306,6 +307,7 @@ void DTrackWireBased_factory::Process(const std::shared_ptr<const JEvent>& event
       DetectorSystem_t t0_detector=candidate->dDetector;
       if (min_dphi<SC_DPHI_CUT){
 	t0_detector=SYS_START;
+	t0_sigma=0.3;
 	t0=schits[sc_hit_index]->t;
       }
       else { // If matching to start counter did not work, try to match to BCAL
@@ -349,6 +351,7 @@ void DTrackWireBased_factory::Process(const std::shared_ptr<const JEvent>& event
 	if (matched_points.size()>=MIN_BCAL_MATCHES){
 	  t0_detector=SYS_BCAL;
 	  t0=matched_points[0]->t();
+	  t0_sigma=0.35;
 	  // Crude correction for flight time from target
 	  t0-=2.2; // assum s=65 cm at roughly the speed of light
 	}
@@ -358,11 +361,11 @@ void DTrackWireBased_factory::Process(const std::shared_ptr<const JEvent>& event
 	rt->Reset();
 	rt->q = candidate->dCharge;
 
-	DoFit(i,candidate,rt,event,ParticleMass(PiPlus),t0,t0_detector);
+	DoFit(i,candidate,rt,event,ParticleMass(PiPlus),t0,t0_sigma,t0_detector);
 	// Only do fit for proton mass hypothesis for low momentum particles
 	if (candidate->dMomentum.Mag()<PROTON_MOM_THRESH){
 	  rt->Reset();
-	  DoFit(i,candidate,rt,event,ParticleMass(Proton),t0,t0_detector);
+	  DoFit(i,candidate,rt,event,ParticleMass(Proton),t0,t0_sigma,t0_detector);
 	}
       }
       else{
@@ -383,7 +386,7 @@ void DTrackWireBased_factory::Process(const std::shared_ptr<const JEvent>& event
 
 	    rt->Reset();
             rt->q = candidate->dCharge;
-            DoFit(i,candidate,rt,event,ParticleMass(Particle_t(mass_hypotheses[j])),t0,t0_detector);
+            DoFit(i,candidate,rt,event,ParticleMass(Particle_t(mass_hypotheses[j])),t0,t0_sigma,t0_detector);
          }
 
       }
@@ -496,7 +499,7 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
 				    const DTrackCandidate *candidate,
 				    DReferenceTrajectory *rt,
 				    const std::shared_ptr<const JEvent>& event,
-				    double mass,double t0,
+				    double mass,double t0,double t0_sigma,
 				    DetectorSystem_t t0_detector){
    // Get the hits from the candidate
   vector<const DFDCPseudo*>myfdchits=candidate->fdchits;
@@ -512,7 +515,7 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
       fitter->AddHits(mycdchits);
 
       status=fitter->FitTrack(candidate->dPosition,candidate->dMomentum,
-			      candidate->dCharge,mass,t0,t0_detector);
+			      candidate->dCharge,mass,t0,t0_sigma,t0_detector);
    }
    else{
      fitter->Reset();
@@ -530,7 +533,7 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
       kd.setMomentum(candidate->dMomentum);
       status=fitter->FindHitsAndFitTrack(kd,rt,event,mass,
 					 mycdchits.size()+2*myfdchits.size(),
-					 t0,t0_detector);
+					 t0,t0_sigma,t0_detector);
       if (fitter->GetChisq()<0 || status==DTrackFitter::kFitNotDone){
 	if (DEBUG_LEVEL>1)
 	  _DBG_ << "Using hits from candidate..." << endl;
@@ -540,7 +543,7 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
          fitter->AddHits(mycdchits);
 
          status=fitter->FitTrack(candidate->dPosition,candidate->dMomentum,
-				 candidate->dCharge,mass,t0,t0_detector);
+				 candidate->dCharge,mass,t0,t0_sigma,t0_detector);
       }
    }
 
