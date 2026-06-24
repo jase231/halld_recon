@@ -99,6 +99,7 @@ class DTrackTimeBased_factory:public JFactoryT<DTrackTimeBased>{
   DTrackFitter::fit_status_t FitWithWireBasedHits(const DTrackWireBased *track,
 						  double mass,
 						  DTrackTimeBased::DStartTime_t &start_time);
+  void GetdEdxInfo(DTrackTimeBased *timebased_track) const;
 
   // Geometry
   const DGeometry *geom;

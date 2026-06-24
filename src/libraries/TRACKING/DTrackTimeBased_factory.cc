@@ -965,21 +965,9 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
       timebased_track->measured_cdc_hits_on_track = cdchits.size();
       timebased_track->measured_fdc_hits_on_track = fdchits.size();
 
-      // dEdx
-      double locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp;
-      double locdx_CDC,locdx_CDC_amp;
-      unsigned int locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC;
-      pid_algorithm->CalcDCdEdx(timebased_track, locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp,locdx_CDC,locdx_CDC_amp, locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC);
+      // Add the dEdx info to the track
+      GetdEdxInfo(timebased_track);
       
-      timebased_track->ddEdx_FDC = locdEdx_FDC;
-      timebased_track->ddx_FDC = locdx_FDC;
-      timebased_track->dNumHitsUsedFordEdx_FDC = locNumHitsUsedFordEdx_FDC;
-      timebased_track->ddEdx_CDC = locdEdx_CDC;
-      timebased_track->ddEdx_CDC_amp= locdEdx_CDC_amp;
-      timebased_track->ddx_CDC = locdx_CDC;
-      timebased_track->ddx_CDC_amp= locdx_CDC_amp;
-      timebased_track->dNumHitsUsedFordEdx_CDC = locNumHitsUsedFordEdx_CDC;
-
       // Set CDC ring & FDC plane hit patterns before candidate and wirebased tracks are associated
       timebased_track->dCDCRings = pid_algorithm->Get_CDCRingBitPattern(cdchits);
       timebased_track->dFDCPlanes = pid_algorithm->Get_FDCPlaneBitPattern(fdchits);
@@ -1015,12 +1003,6 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
   // Create a new time-based track object
   DTrackTimeBased *timebased_track = new DTrackTimeBased();
   *static_cast<DTrackingData*>(timebased_track) = *static_cast<const DTrackingData*>(src_track);
-
-  // Get the hits used in the fit  
-  vector<const DCDCTrackHit *>src_cdchits;
-  src_track->GetT(src_cdchits);
-  vector<const DFDCPseudo *>src_fdchits;
-  src_track->GetT(src_fdchits);
 
   // Copy over DKinematicData part from the result of a successful fit
   timebased_track->setPID(IDTrack(q, my_mass));
@@ -1062,8 +1044,7 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
     fitter->SetFitType(DTrackFitter::kTimeBased);    
     status = fitter->FindHitsAndFitTrack(*timebased_track,
 					 timebased_track->extrapolations,event, 
-					 my_mass,
-					 src_cdchits.size()+2*src_fdchits.size(),
+					 my_mass,timebased_track->Ndof+5,
 					 timebased_track->t0(),
 					 timebased_track->t0_err(),
 					 timebased_track->t0_detector());
@@ -1091,8 +1072,8 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
       timebased_track->flags=DTrackTimeBased::FLAG__GOODFIT;
 
       // Add hits used as associated objects
-      const vector<const DCDCTrackHit*> &cdchits = fitter->GetCDCFitHits();
-      const vector<const DFDCPseudo*> &fdchits = fitter->GetFDCFitHits();
+      auto cdchits = fitter->GetCDCFitHits();
+      auto fdchits = fitter->GetFDCFitHits();
        
       for(unsigned int m=0; m<cdchits.size(); m++)
 	timebased_track->AddAssociatedObject(cdchits[m]);
@@ -1101,14 +1082,24 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
        
       timebased_track->measured_cdc_hits_on_track = cdchits.size();
       timebased_track->measured_fdc_hits_on_track = fdchits.size();
-       
+      timebased_track->dCDCRings = pid_algorithm->Get_CDCRingBitPattern(cdchits);
+      timebased_track->dFDCPlanes = pid_algorithm->Get_FDCPlaneBitPattern(fdchits);
+
+      // Add dEx info to the track
+      GetdEdxInfo(timebased_track);
+      
       // Compute the figure-of-merit based on tracking
       timebased_track->FOM = TMath::Prob(timebased_track->chisq, timebased_track->Ndof);
-      
     }
   }
 
-  if (status!=DTrackFitter::kFitSuccess){ 
+  if (status!=DTrackFitter::kFitSuccess){
+    // Get the hits used in the intitial fit  
+    vector<const DCDCTrackHit *>src_cdchits;
+    src_track->GetT(src_cdchits);
+    vector<const DFDCPseudo *>src_fdchits;
+    src_track->GetT(src_fdchits);
+    
     for(unsigned int m=0; m<src_fdchits.size(); m++)
       timebased_track->AddAssociatedObject(src_fdchits[m]); 
     for(unsigned int m=0; m<src_cdchits.size(); m++)
@@ -1116,114 +1107,30 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
     
     timebased_track->measured_cdc_hits_on_track = src_cdchits.size();
     timebased_track->measured_fdc_hits_on_track = src_fdchits.size();
-  }
+    timebased_track->dCDCRings=src_track->dCDCRings;
+    timebased_track->dFDCPlanes=src_track->dFDCPlanes;
 
-  // dEdx
-  double locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp;
-  double locdx_CDC,locdx_CDC_amp;
-  unsigned int locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC;
-  pid_algorithm->CalcDCdEdx(timebased_track, locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp,locdx_CDC,locdx_CDC_amp, locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC);
-  
-  timebased_track->ddEdx_FDC = locdEdx_FDC;
-  timebased_track->ddx_FDC = locdx_FDC;
-  timebased_track->dNumHitsUsedFordEdx_FDC = locNumHitsUsedFordEdx_FDC;
-  timebased_track->ddEdx_CDC = locdEdx_CDC;
-  timebased_track->ddEdx_CDC_amp = locdEdx_CDC_amp;
-  timebased_track->ddx_CDC = locdx_CDC;
-  timebased_track->ddx_CDC_amp = locdx_CDC_amp;
-  timebased_track->dNumHitsUsedFordEdx_CDC = locNumHitsUsedFordEdx_CDC;
-
-  // The above code has a truncated mean algorithm for dEdx hardwired for the FDC
-  // and selectable between on and off for the CDC_amp. Here I save the complete
-  // information for a variety of truncation choices, and let the user decide later.
-
-  if (SAVE_TRUNCATED_DEDX) {
-    std::vector<DParticleID::dedx_t> locdEdxHits_CDC;
-    std::vector<DParticleID::dedx_t> locdEdxHits_FDC;
-    jerror_t locReturnStatus = pid_algorithm->GetDCdEdxHits(timebased_track, locdEdxHits_CDC, locdEdxHits_FDC);
-    if (locReturnStatus == NOERROR) {
-      const int maxtrunc(5);
-      sort(locdEdxHits_CDC.begin(),locdEdxHits_CDC.end(), DTrackTimeBased_dedx_cmp);  
-      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
-        for (int i=itrunc; i < (int)locdEdxHits_CDC.size(); ++i) {
-          double dx = locdEdxHits_CDC[i].dx;
-          double dE = locdEdxHits_CDC[i].dEdx * dx;
-          if (itrunc < (int)timebased_track->ddx_CDC_trunc.size()) {
-            timebased_track->ddx_CDC_trunc[itrunc] += dx;
-            timebased_track->ddEdx_CDC_trunc[itrunc] += dE;
-          }
-          else {
-            timebased_track->ddx_CDC_trunc.push_back(dx);
-            timebased_track->ddEdx_CDC_trunc.push_back(dE);
-          }
-        }
-        if (itrunc < (int)timebased_track->ddx_CDC_trunc.size())
-          timebased_track->ddEdx_CDC_trunc[itrunc] /= timebased_track->ddx_CDC_trunc[itrunc] + 1e-99;
-      }
-
-      sort(locdEdxHits_CDC.begin(),locdEdxHits_CDC.end(), DTrackTimeBased_dedx_amp_cmp);  
-      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
-        for (int i=itrunc; i < (int)locdEdxHits_CDC.size(); ++i) {
-          double dx = locdEdxHits_CDC[i].dx;
-          double dE = locdEdxHits_CDC[i].dEdx_amp * dx;
-          if (itrunc < (int)timebased_track->ddx_CDC_amp_trunc.size()) {
-            timebased_track->ddx_CDC_amp_trunc[itrunc] += dx;
-            timebased_track->ddEdx_CDC_amp_trunc[itrunc] += dE;
-          }
-          else {
-            timebased_track->ddx_CDC_amp_trunc.push_back(dx);
-            timebased_track->ddEdx_CDC_amp_trunc.push_back(dE);
-          }
-        }
-        if (itrunc < (int)timebased_track->ddx_CDC_amp_trunc.size())
-          timebased_track->ddEdx_CDC_amp_trunc[itrunc] /= timebased_track->ddx_CDC_amp_trunc[itrunc] + 1e-99;
-      }
-
-      sort(locdEdxHits_FDC.begin(),locdEdxHits_FDC.end(), DTrackTimeBased_dedx_cmp);  
-      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
-        for (int i=itrunc; i < (int)locdEdxHits_FDC.size(); ++i) {
-          double dx = locdEdxHits_FDC[i].dx;
-          double dE = locdEdxHits_FDC[i].dEdx * dx;
-          if (itrunc < (int)timebased_track->ddx_FDC_trunc.size()) {
-            timebased_track->ddx_FDC_trunc[itrunc] += dx;
-            timebased_track->ddEdx_FDC_trunc[itrunc] += dE;
-          }
-          else {
-            timebased_track->ddx_FDC_trunc.push_back(dx);
-            timebased_track->ddEdx_FDC_trunc.push_back(dE);
-          }
-        }
-        if (itrunc < (int)timebased_track->ddx_FDC_trunc.size())
-          timebased_track->ddEdx_FDC_trunc[itrunc] /= timebased_track->ddx_FDC_trunc[itrunc] + 1e-99;
-      }
-
-      sort(locdEdxHits_FDC.begin(),locdEdxHits_FDC.end(), DTrackTimeBased_dedx_amp_cmp);  
-      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
-        for (int i=itrunc; i < (int)locdEdxHits_FDC.size(); ++i) {
-          double dx = locdEdxHits_FDC[i].dx;
-          double dE = locdEdxHits_FDC[i].dEdx_amp * dx;
-          if (itrunc < (int)timebased_track->ddx_FDC_amp_trunc.size()) {
-            timebased_track->ddx_FDC_amp_trunc[itrunc] += dx;
-            timebased_track->ddEdx_FDC_amp_trunc[itrunc] += dE;
-          }
-          else {
-            timebased_track->ddx_FDC_amp_trunc.push_back(dx);
-            timebased_track->ddEdx_FDC_amp_trunc.push_back(dE);
-          }
-        }
-        if (itrunc < (int)timebased_track->ddx_FDC_amp_trunc.size())
-          timebased_track->ddEdx_FDC_amp_trunc[itrunc] /= timebased_track->ddx_FDC_amp_trunc[itrunc] + 1e-99;
-      }
+    // Copy dEdx data to the new track from the source track
+    timebased_track->ddEdx_FDC = src_track->ddEdx_FDC;
+    timebased_track->ddx_FDC = src_track->ddx_FDC;
+    timebased_track->dNumHitsUsedFordEdx_FDC = src_track->dNumHitsUsedFordEdx_FDC;
+    timebased_track->ddEdx_CDC = src_track->ddEdx_CDC;
+    timebased_track->ddEdx_CDC_amp = src_track->ddEdx_CDC_amp;
+    timebased_track->ddx_CDC = src_track->ddx_CDC;
+    timebased_track->ddx_CDC_amp = src_track->ddx_CDC_amp;
+    timebased_track->dNumHitsUsedFordEdx_CDC = src_track->dNumHitsUsedFordEdx_CDC;
+    if (SAVE_TRUNCATED_DEDX){
+      timebased_track->ddx_FDC_trunc=src_track->ddx_FDC_trunc;
+      timebased_track->ddEdx_FDC_trunc=src_track->ddEdx_FDC_trunc;
+      timebased_track->ddx_FDC_amp_trunc=src_track->ddx_FDC_amp_trunc;
+      timebased_track->ddEdx_FDC_amp_trunc=src_track->ddEdx_FDC_amp_trunc;
+      timebased_track->ddx_CDC_trunc =src_track->ddx_CDC_trunc;
+      timebased_track->ddEdx_CDC_trunc =src_track->ddEdx_CDC_trunc;
+      timebased_track->ddx_CDC_amp_trunc=src_track->ddx_CDC_amp_trunc;
+      timebased_track->ddEdx_CDC_amp_trunc=src_track->ddEdx_CDC_amp_trunc;
     }
   }
 
-  // Set CDC ring & FDC plane hit patterns before candidate and wirebased tracks are associated
-  vector<const DCDCTrackHit*> tempCDCTrackHits = timebased_track->Get<DCDCTrackHit>();
-  vector<const DFDCPseudo*> tempFDCPseudos = timebased_track->Get<DFDCPseudo>();
-
-  timebased_track->dCDCRings = pid_algorithm->Get_CDCRingBitPattern(tempCDCTrackHits);
-  timebased_track->dFDCPlanes = pid_algorithm->Get_FDCPlaneBitPattern(tempFDCPseudos);
-  
   tracks_to_add.push_back(timebased_track);
 }
 
@@ -1404,21 +1311,11 @@ void DTrackTimeBased_factory::MakeTimeBasedFromWireBased(vector<const DFDCPseudo
   
   timebased_track->measured_cdc_hits_on_track = cdchits.size();
   timebased_track->measured_fdc_hits_on_track = fdchits.size();
+  timebased_track->dCDCRings=pid_algorithm->Get_CDCRingBitPattern(cdchits);
+  timebased_track->dFDCPlanes=pid_algorithm->Get_FDCPlaneBitPattern(fdchits);
 
   // dEdx
-  double locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp;
-  double locdx_CDC_amp,locdx_CDC;
-  unsigned int locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC;
-  pid_algorithm->CalcDCdEdx(timebased_track, locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp, locdx_CDC, locdx_CDC_amp,locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC);
-  
-  timebased_track->ddEdx_FDC = locdEdx_FDC;
-  timebased_track->ddx_FDC = locdx_FDC;
-  timebased_track->dNumHitsUsedFordEdx_FDC = locNumHitsUsedFordEdx_FDC;
-  timebased_track->ddEdx_CDC = locdEdx_CDC; 
-  timebased_track->ddEdx_CDC_amp = locdEdx_CDC_amp;
-  timebased_track->ddx_CDC = locdx_CDC; 
-  timebased_track->ddx_CDC_amp = locdx_CDC_amp;
-  timebased_track->dNumHitsUsedFordEdx_CDC = locNumHitsUsedFordEdx_CDC;
+  GetdEdxInfo(timebased_track);
 
   // Yes, the line below is redundant, but it is needed if mass hypotheses
   // need to be added
@@ -1446,3 +1343,103 @@ DTrackTimeBased_factory::FitWithWireBasedHits(const DTrackWireBased *track,doubl
 			  start_time.t0,start_time.system);
 }
 
+// Add the dEdx data to the track object
+void DTrackTimeBased_factory::GetdEdxInfo(DTrackTimeBased *timebased_track) const{
+  double locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp;
+  double locdx_CDC,locdx_CDC_amp;
+  unsigned int locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC;
+  pid_algorithm->CalcDCdEdx(timebased_track, locdEdx_FDC, locdx_FDC, locdEdx_CDC, locdEdx_CDC_amp,locdx_CDC,locdx_CDC_amp, locNumHitsUsedFordEdx_FDC, locNumHitsUsedFordEdx_CDC);
+      
+  timebased_track->ddEdx_FDC = locdEdx_FDC;
+  timebased_track->ddx_FDC = locdx_FDC;
+  timebased_track->dNumHitsUsedFordEdx_FDC = locNumHitsUsedFordEdx_FDC;
+  timebased_track->ddEdx_CDC = locdEdx_CDC;
+  timebased_track->ddEdx_CDC_amp= locdEdx_CDC_amp;
+  timebased_track->ddx_CDC = locdx_CDC;
+  timebased_track->ddx_CDC_amp= locdx_CDC_amp;
+  timebased_track->dNumHitsUsedFordEdx_CDC = locNumHitsUsedFordEdx_CDC;
+  
+  // The above code has a truncated mean algorithm for dEdx hardwired for the FDC
+  // and selectable between on and off for the CDC_amp. Here I save the complete
+  // information for a variety of truncation choices, and let the user decide later.
+
+  if (SAVE_TRUNCATED_DEDX) {
+    std::vector<DParticleID::dedx_t> locdEdxHits_CDC;
+    std::vector<DParticleID::dedx_t> locdEdxHits_FDC;
+    jerror_t locReturnStatus = pid_algorithm->GetDCdEdxHits(timebased_track, locdEdxHits_CDC, locdEdxHits_FDC);
+    if (locReturnStatus == NOERROR) {
+      const int maxtrunc(5);
+      sort(locdEdxHits_CDC.begin(),locdEdxHits_CDC.end(), DTrackTimeBased_dedx_cmp);  
+      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
+        for (int i=itrunc; i < (int)locdEdxHits_CDC.size(); ++i) {
+          double dx = locdEdxHits_CDC[i].dx;
+          double dE = locdEdxHits_CDC[i].dEdx * dx;
+          if (itrunc < (int)timebased_track->ddx_CDC_trunc.size()) {
+            timebased_track->ddx_CDC_trunc[itrunc] += dx;
+            timebased_track->ddEdx_CDC_trunc[itrunc] += dE;
+          }
+          else {
+            timebased_track->ddx_CDC_trunc.push_back(dx);
+            timebased_track->ddEdx_CDC_trunc.push_back(dE);
+          }
+        }
+        if (itrunc < (int)timebased_track->ddx_CDC_trunc.size())
+          timebased_track->ddEdx_CDC_trunc[itrunc] /= timebased_track->ddx_CDC_trunc[itrunc] + 1e-99;
+      }
+
+      sort(locdEdxHits_CDC.begin(),locdEdxHits_CDC.end(), DTrackTimeBased_dedx_amp_cmp);  
+      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
+        for (int i=itrunc; i < (int)locdEdxHits_CDC.size(); ++i) {
+          double dx = locdEdxHits_CDC[i].dx;
+          double dE = locdEdxHits_CDC[i].dEdx_amp * dx;
+          if (itrunc < (int)timebased_track->ddx_CDC_amp_trunc.size()) {
+            timebased_track->ddx_CDC_amp_trunc[itrunc] += dx;
+            timebased_track->ddEdx_CDC_amp_trunc[itrunc] += dE;
+          }
+          else {
+            timebased_track->ddx_CDC_amp_trunc.push_back(dx);
+            timebased_track->ddEdx_CDC_amp_trunc.push_back(dE);
+          }
+        }
+        if (itrunc < (int)timebased_track->ddx_CDC_amp_trunc.size())
+          timebased_track->ddEdx_CDC_amp_trunc[itrunc] /= timebased_track->ddx_CDC_amp_trunc[itrunc] + 1e-99;
+      }
+
+      sort(locdEdxHits_FDC.begin(),locdEdxHits_FDC.end(), DTrackTimeBased_dedx_cmp);  
+      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
+        for (int i=itrunc; i < (int)locdEdxHits_FDC.size(); ++i) {
+          double dx = locdEdxHits_FDC[i].dx;
+          double dE = locdEdxHits_FDC[i].dEdx * dx;
+          if (itrunc < (int)timebased_track->ddx_FDC_trunc.size()) {
+            timebased_track->ddx_FDC_trunc[itrunc] += dx;
+            timebased_track->ddEdx_FDC_trunc[itrunc] += dE;
+          }
+          else {
+            timebased_track->ddx_FDC_trunc.push_back(dx);
+            timebased_track->ddEdx_FDC_trunc.push_back(dE);
+          }
+        }
+        if (itrunc < (int)timebased_track->ddx_FDC_trunc.size())
+          timebased_track->ddEdx_FDC_trunc[itrunc] /= timebased_track->ddx_FDC_trunc[itrunc] + 1e-99;
+      }
+
+      sort(locdEdxHits_FDC.begin(),locdEdxHits_FDC.end(), DTrackTimeBased_dedx_amp_cmp);  
+      for (int itrunc=0; itrunc <= maxtrunc; ++itrunc) {
+        for (int i=itrunc; i < (int)locdEdxHits_FDC.size(); ++i) {
+          double dx = locdEdxHits_FDC[i].dx;
+          double dE = locdEdxHits_FDC[i].dEdx_amp * dx;
+          if (itrunc < (int)timebased_track->ddx_FDC_amp_trunc.size()) {
+            timebased_track->ddx_FDC_amp_trunc[itrunc] += dx;
+            timebased_track->ddEdx_FDC_amp_trunc[itrunc] += dE;
+          }
+          else {
+            timebased_track->ddx_FDC_amp_trunc.push_back(dx);
+            timebased_track->ddEdx_FDC_amp_trunc.push_back(dE);
+          }
+        }
+        if (itrunc < (int)timebased_track->ddx_FDC_amp_trunc.size())
+          timebased_track->ddEdx_FDC_amp_trunc[itrunc] /= timebased_track->ddx_FDC_amp_trunc[itrunc] + 1e-99;
+      }
+    }
+  }
+}
