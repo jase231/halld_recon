@@ -112,8 +112,8 @@ void JEventProcessor_PS_timing::Init()
     pscHITtiming[0] = new TH2I("pscHITtiming0","PSC HIT ID vs PSC HITtime-RFtime NORTH; PSC HITtime-RFtime [ns]; PSC ID", 2000, -100., 0., 10, -0.5, 9.5); 
     pscHITtiming[1] = new TH2I("pscHITtiming1","PSC HIT ID vs PSC HITtime-RFtime SOUTH; PSC HITtime-RFtime [ns]; PSC ID", 2000, -100., 0., 10, -0.5, 9.5); 
     
-    psHITtiming[0] = new TH2I("psHITtiming0","PS HIT ID vs PSC HITtime-RFtime NORTH; PS HITtime-RFtime [ns]; PS ID", 1000, -100., 0., 151, -0.5, 149.5); 
-    psHITtiming[1] = new TH2I("psHITtiming1","PS HIT ID vs PSC HITtime-RFtime SOUTH; PS HITtime-RFtime [ns]; PS ID", 1000, -100., 0., 151, -0.5, 149.5); 
+    psHITtiming[0] = new TH2I("psHITtiming0","PS HIT ID vs PSC HITtime-RFtime NORTH; PS HITtime-RFtime [ns]; PS ID", 1000, -100., 0., 150, -0.5, 149.5); 
+    psHITtiming[1] = new TH2I("psHITtiming1","PS HIT ID vs PSC HITtime-RFtime SOUTH; PS HITtime-RFtime [ns]; PS ID", 1000, -100., 0., 150, -0.5, 149.5); 
 
     mainDir->cd();
 }
