@@ -53,6 +53,13 @@ DParticleID::DParticleID(const std::shared_ptr<const JEvent>& event)
   OUT_OF_TIME_CUT = 35.0; // Changed 200 -> 35 ns, March 2016
   app->SetDefaultParameter("PID:OUT_OF_TIME_CUT",OUT_OF_TIME_CUT);
 
+  bool FAST_TRACKING_MODE=false;
+  app->SetDefaultParameter("TRKFIT:FAST_TRACKING_MODE",FAST_TRACKING_MODE);
+  if (FAST_TRACKING_MODE){
+    // Effectively disable the out-of-time cut
+    OUT_OF_TIME_CUT=1000.;
+  }
+  
   CDC_TIME_CUT_FOR_DEDX = 1000.0; 
   app->SetDefaultParameter("PID:CDC_TIME_CUT_FOR_DEDX",CDC_TIME_CUT_FOR_DEDX);
     
