@@ -562,10 +562,11 @@ void DTrackWireBased_factory::DoFit(unsigned int c_id,
       case DTrackFitter::kFitSuccess:
          if(!isfinite(fitter->GetFitParameters().position().X())) break;
          {    
-            // Make a new wire-based track
-             DTrackWireBased *track = new DTrackWireBased();
-             *static_cast<DTrackingData*>(track) = fitter->GetFitParameters();
-
+	   // Make a new wire-based track
+	   DTrackWireBased *track = new DTrackWireBased();
+	   *static_cast<DTrackingData*>(track) = fitter->GetFitParameters();
+	   
+	   track->setTime(track->t0());
             track->chisq = fitter->GetChisq();
             track->Ndof = fitter->GetNdof();
             track->FOM = TMath::Prob(track->chisq, track->Ndof);
@@ -667,6 +668,7 @@ void DTrackWireBased_factory::AddMissingTrackHypothesis(vector<DTrackWireBased*>
 
   // Copy over DKinematicData part from the result of a successful fit
   wirebased_track->setPID(IDTrack(q, my_mass));
+  wirebased_track->setTime(src_track->t0());
   wirebased_track->chisq = src_track->chisq;
   wirebased_track->Ndof = src_track->Ndof;
   wirebased_track->pulls = src_track->pulls;
