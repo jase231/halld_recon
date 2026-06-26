@@ -3555,7 +3555,7 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
 				double& StartTime) const{
   if (ECALShowers.size()==0) return false;
   if (extrapolations.size()==0) return false;
-  double StartTimeGuess=StartTime;
+
   DVector3 trackpos=extrapolations[0].position;
   double d_min=1e6;
   unsigned int best_ecal_match=0;
@@ -3567,13 +3567,13 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       best_ecal_match=i;
     }
   }
-  StartTime=ECALShowers[best_ecal_match]->t-extrapolations[0].t;
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   double p=extrapolations[0].momentum.Mag();
   double cut=ECAL_CUT_PAR1+ECAL_CUT_PAR2/p;
-  if (d_min<cut) return true;
-
+  if (d_min<cut){
+    StartTime=ECALShowers[best_ecal_match]->t-extrapolations[0].t;
+    return true;
+  }
   return false;
 }
 
@@ -3582,7 +3582,7 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
 				double& StartTime) const{
   if (ECALHits.size()==0) return false;
   if (extrapolations.size()==0) return false;
-  double StartTimeGuess=StartTime;
+
   DVector3 trackpos=extrapolations[0].position;
   double d_min=1e6;
   unsigned int best_ecal_match=0;
@@ -3594,11 +3594,10 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       best_ecal_match=i;
     }
   }
-  StartTime=ECALHits[best_ecal_match]->t-extrapolations[0].t;
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   // Cut is 1*sqrt(2.) + small amount to account for track position resolution
   if (d_min<1.5){
+    StartTime=ECALHits[best_ecal_match]->t-extrapolations[0].t;
     return true;
   }
 
@@ -3610,7 +3609,7 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
 				double& StartTime) const{
   if (FCALShowers.size()==0) return false;
   if (extrapolations.size()==0) return false;
-  double StartTimeGuess=StartTime;
+
   DVector3 trackpos=extrapolations[0].position;
   double d_min=1e6;
   unsigned int best_fcal_match=0;
@@ -3622,13 +3621,13 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       best_fcal_match=i;
     }
   }
-  StartTime=FCALShowers[best_fcal_match]->getTime()-extrapolations[0].t;
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   double p=extrapolations[0].momentum.Mag();
   double cut=FCAL_CUT_PAR1+FCAL_CUT_PAR2/p;
-  if (d_min<cut) return true;
-
+  if (d_min<cut){
+    StartTime=FCALShowers[best_fcal_match]->getTime()-extrapolations[0].t;
+    return true;
+  }
   return false;
 }  
 
@@ -3637,7 +3636,7 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
 				double& StartTime) const{
   if (FCALHits.size()==0) return false;
   if (extrapolations.size()==0) return false;
-  double StartTimeGuess=StartTime;
+
   DVector3 trackpos=extrapolations[0].position;
   double d_min=1e6;
   unsigned int best_fcal_match=0;
@@ -3649,14 +3648,13 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       best_fcal_match=i;
     }
   }
-  StartTime=FCALHits[best_fcal_match]->t-extrapolations[0].t;
-  // apply timewalk correction
-  StartTime-=dFCALTimewalkPar1*exp(-dFCALTimewalkPar2*FCALHits[best_fcal_match]->E); 
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   double p=extrapolations[0].momentum.Mag();
   double cut=FCAL_CUT_PAR1+FCAL_CUT_PAR2/p;
   if (d_min<cut){
+    StartTime=FCALHits[best_fcal_match]->t-extrapolations[0].t;
+    // apply timewalk correction
+    StartTime-=dFCALTimewalkPar1*exp(-dFCALTimewalkPar2*FCALHits[best_fcal_match]->E); 
     return true;
   }
 
@@ -3670,7 +3668,6 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
   if (SCHits.size()==0) return false;
   if (extrapolations.size()==0) return false;
 
-  double StartTimeGuess=StartTime;
   DVector3 trackpos=extrapolations[0].position;
   double z=trackpos.z();
   double dphi_min=1000.;
@@ -3689,13 +3686,13 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       }
     }
   }	   
-  double sc_corrected_time=Get_CorrectedHitTime(SCHits[best_sc_match],trackpos);
-  StartTime=sc_corrected_time-extrapolations[0].t;
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   double sc_dphi_cut = dSCCutPars_WireBased[0] + dSCCutPars_WireBased[1]*exp(dSCCutPars_WireBased[2]*(trackpos.Z() - dSCCutPars_WireBased[3]));
-  if (fabs(180.*dphi_min/M_PI) <= sc_dphi_cut) return true;
-  
+  if (fabs(180.*dphi_min/M_PI) <= sc_dphi_cut){
+     double sc_corrected_time=Get_CorrectedHitTime(SCHits[best_sc_match],trackpos);
+     StartTime=sc_corrected_time-extrapolations[0].t;
+    return true;
+  }
   return false;
 } 
 
@@ -3705,7 +3702,6 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
   if (TOFPoints.size()==0) return false;
   if (extrapolations.size()==0) return false;
 
-  double StartTimeGuess=StartTime;
   DVector3 trackpos=extrapolations[0].position;
   // Set up cuts
   double locMatchCut_2D = exp(-1.0*TOF_CUT_PAR1*extrapolations[0].momentum.Mag() + TOF_CUT_PAR2) + TOF_CUT_PAR3;
@@ -3725,29 +3721,29 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
       best_tof_match=i;
     }
   }
-  // Get the start time and check that it is consistent with an initial guess
-  // to within some OUT_OF_TIME_CUT
-  StartTime=Get_CorrectedHitTime(TOFPoints[best_tof_match],trackpos)
-    -extrapolations[0].t;
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
 
   // Apply matching criteria
+  bool got_match=false;
   if (TOFPoints[best_tof_match]->Is_XPositionWellDefined()==false){
     if (dy_at_min<locMatchCut_1D){
-      return true;
+      got_match=true;
     }
   }
   else if (TOFPoints[best_tof_match]->Is_YPositionWellDefined()==false){ 
     if (dx_at_min<locMatchCut_1D){
-      return true;
+      got_match=true;
     }
   }
   else{
     if (sqrt(d2_min)<locMatchCut_2D){
-      return true;
+      got_match=true;
     }
   }
-
+  if (got_match){
+    StartTime=Get_CorrectedHitTime(TOFPoints[best_tof_match],trackpos)
+      -extrapolations[0].t;
+    return true;
+  }
   return false;
 }
 
@@ -3757,7 +3753,7 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
   if (locBCALShowers.size()==0) return false; 
   if (extrapolations.size()==0) return false;
 
-  double StartTimeGuess=StartTime;
+  double BestMatchStartTime=StartTime;
   double dphi_min=1e6;
   double locP=0.,dz=0.;
   for (unsigned int i=0;i<locBCALShowers.size();i++){
@@ -3774,13 +3770,10 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
 	dphi_min=dphi;
 	dz=pos.z()-bcalpos.z();
 	locP=mom.Mag();
-	StartTime=locBCALShowers[i]->t-t;
+	BestMatchStartTime=locBCALShowers[i]->t-t;
       }
     }
   }
-  // Check that the "start time" is not too far out of time with the rest of 
-  // the event
-  if (fabs(StartTime-StartTimeGuess)>OUT_OF_TIME_CUT) return false;
   
   // look for a match in z-position
   if(fabs(dz) > BCAL_Z_CUT) return false;
@@ -3788,7 +3781,8 @@ bool DParticleID::Get_StartTime(const vector<DTrackFitter::Extrapolation_t> &ext
   // .. and in phi
   double locDeltaPhi = 180.0*dphi_min/M_PI;
   double locPhiCut = BCAL_PHI_CUT_PAR1 + BCAL_PHI_CUT_PAR2*exp(-1.0*BCAL_PHI_CUT_PAR3*locP);
-  if (fabs(locDeltaPhi)<locPhiCut){    
+  if (fabs(locDeltaPhi)<locPhiCut){
+    StartTime=BestMatchStartTime;
     return true;
   }
 
