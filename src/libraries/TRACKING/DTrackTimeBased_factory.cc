@@ -274,12 +274,6 @@ void DTrackTimeBased_factory::BeginRun(const std::shared_ptr<const JEvent>& even
 		if(!hitMatchFOM)hitMatchFOM = new TH1F("hitMatchFOM","Total Fraction of Hit Matches", 101, 0.0, 1.01);
 		if(!chi2_trk_mom)chi2_trk_mom = new TH2F("chi2_trk_mom","Track #chi^{2}/Ndf versus Kinematic #chi^{2}/Ndf", 1000, 0.0, 100.0, 1000, 0.,100.);
 
-
-		Hstart_time=(TH2F*)gROOT->FindObject("Hstart_time");
-		if (!Hstart_time) Hstart_time=new TH2F("Hstart_time",
-						       "vertex time source vs. time",
-						 300,-50,50,9,-0.5,8.5);
-
 		root_lock->RootUnLock();
 	}
 
@@ -375,8 +369,8 @@ void DTrackTimeBased_factory::Process(const std::shared_ptr<const JEvent>& event
 
     // Get the start time for the track
     DTrackTimeBased::DStartTime_t start_time;
-    GetStartTime(track,sc_hits,tof_points,bcal_showers,fcal_showers,fcal_hits,ecal_showers,
-		 ecal_hits,start_time);
+    GetStartTime(track,sc_hits,tof_points,bcal_showers,fcal_showers,fcal_hits,
+		 ecal_showers,ecal_hits,start_time);
     
     // Fit the track
     DoFit(track,start_time,event,track->mass());
@@ -785,6 +779,9 @@ void DTrackTimeBased_factory::GetStartTime(const DTrackWireBased *track,
   // Match to the start counter and the outer detectors
   double track_t0=track->t0();
   double locStartTime = track_t0;  // Initial guess from tracking
+  start_time.t0=track_t0;
+  start_time.t0_sigma=2.75; // crude estimate
+  start_time.system=track->t0_detector();
  
   // Get start time estimate from Start Counter
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_START),sc_hits,locStartTime)){
@@ -807,16 +804,15 @@ void DTrackTimeBased_factory::GetStartTime(const DTrackWireBased *track,
   locStartTime = track_t0;  // Initial guess from tracking
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_showers,locStartTime)){
     start_time.t0=locStartTime;
-    start_time.t0_sigma=0.7;
+    start_time.t0_sigma=0.5;
     start_time.system=SYS_FCAL;
 
     return;
   }
   // look for matches to single FCAL hits
-  locStartTime = track_t0;  // Initial guess from tracking
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_hits,locStartTime)){
     start_time.t0=locStartTime;
-    start_time.t0_sigma=0.7;
+    start_time.t0_sigma=0.5;
     start_time.system=SYS_FCAL;
   
     return;
@@ -825,16 +821,15 @@ void DTrackTimeBased_factory::GetStartTime(const DTrackWireBased *track,
   locStartTime = track_t0;  // Initial guess from tracking
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_showers,locStartTime)){
     start_time.t0=locStartTime;
-    start_time.t0_sigma=0.4;
+    start_time.t0_sigma=0.5;
     start_time.system=SYS_ECAL;
 
     return;
   }
   // look for matches to single ECAL hits
-  locStartTime = track_t0;  // Initial guess from tracking
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_hits,locStartTime)){
     start_time.t0=locStartTime;
-    start_time.t0_sigma=0.4;
+    start_time.t0_sigma=0.5;
     start_time.system=SYS_ECAL;
 
     return;
@@ -843,15 +838,11 @@ void DTrackTimeBased_factory::GetStartTime(const DTrackWireBased *track,
   locStartTime=track_t0;  // Initial guess from tracking
   if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_BCAL),bcal_showers,locStartTime)){
     start_time.t0=locStartTime;
-    start_time.t0_sigma=0.35;
+    start_time.t0_sigma=0.5;
     start_time.system=SYS_BCAL;
 
     return;
   }
-  // If all else fails, use track info
-  start_time.t0=track_t0;
-  start_time.t0_sigma=2.5; // crude estimate
-  start_time.system=track->t0_detector();
 }
 
 // Create a list of start times and do the fit for a particular mass hypothesis
@@ -938,21 +929,7 @@ bool DTrackTimeBased_factory::DoFit(const DTrackWireBased *track,
       timebased_track->trackid = track->id;
       timebased_track->candidateid=track->candidateid;
       timebased_track->flags=DTrackTimeBased::FLAG__GOODFIT;
-      
-      // Set the start time
-      timebased_track->setT0(start_time.t0,start_time.t0_sigma,start_time.system);
-	  
-      if (DEBUG_HISTS){
-	int id=0;
-	if (start_time.system==SYS_CDC) id=1;
-	else if (start_time.system==SYS_FDC) id=2;
-	else if (start_time.system==SYS_BCAL) id=3;
-	else if (start_time.system==SYS_FCAL) id=4;
-	else if (start_time.system==SYS_TOF) id=5;
 
-	Hstart_time->Fill(start_time.t0,id);
-      }
-      
       // Add hits used as associated objects
       auto cdchits = fitter->GetCDCFitHits();
       auto fdchits = fitter->GetFDCFitHits();
@@ -1006,6 +983,7 @@ void DTrackTimeBased_factory::AddMissingTrackHypothesis(vector<DTrackTimeBased*>
 
   // Copy over DKinematicData part from the result of a successful fit
   timebased_track->setPID(IDTrack(q, my_mass));
+  timebased_track->setTime(src_track->t0());
   timebased_track->chisq = src_track->chisq;
   timebased_track->Ndof = src_track->Ndof;
   timebased_track->pulls = src_track->pulls;
@@ -1293,7 +1271,8 @@ void DTrackTimeBased_factory::MakeTimeBasedFromWireBased(vector<const DFDCPseudo
 					    ){
   DTrackTimeBased *timebased_track = new DTrackTimeBased();
   *static_cast<DTrackingData*>(timebased_track) = *static_cast<const DTrackingData*>(track);
-  
+
+  timebased_track->setTime(track->t0());
   timebased_track->chisq = track->chisq;
   timebased_track->Ndof = track->Ndof;
   timebased_track->pulls = track->pulls; 

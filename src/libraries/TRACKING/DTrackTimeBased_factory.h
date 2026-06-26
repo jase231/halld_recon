@@ -63,7 +63,6 @@ class DTrackTimeBased_factory:public JFactoryT<DTrackTimeBased>{
   TH1F *fom;
   TH1F *hitMatchFOM;
   TH2F *chi2_trk_mom;
-  TH2F *Hstart_time;
  
   void FilterDuplicates(void);  
   double GetTruthMatchingFOM(int trackIndex,DTrackTimeBased *dtrack,vector<const DMCThrown*>mcthrowns);
@@ -77,9 +76,9 @@ class DTrackTimeBased_factory:public JFactoryT<DTrackTimeBased>{
 		    vector<const DFCALHit*>&fcal_hits,
 		    vector<const DECALShower*>&ecal_showers,
 		    vector<const DECALHit*>&ecal_hits,
-		    DTrackTimeBased::DStartTime_t &start_times) const;
+		    DTrackTimeBased::DStartTime_t &start_time) const;
   bool DoFit(const DTrackWireBased *track,
-	     DTrackTimeBased::DStartTime_t &start_times,
+	     DTrackTimeBased::DStartTime_t &start_time,
 	     const std::shared_ptr<const JEvent>&event,double mass);  
 
   void AddMissingTrackHypothesis(vector<DTrackTimeBased*>&tracks_to_add,
