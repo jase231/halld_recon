@@ -1318,8 +1318,9 @@ DTrackTimeBased_factory::FitWithWireBasedHits(const DTrackWireBased *track,doubl
   fitter->AddHits(myfdchits);
   fitter->AddHits(mycdchits);
 
-  return fitter->FitTrack(track->position(),track->momentum(),track->charge(),mass,
-			  start_time.t0,start_time.system);
+  return fitter->FitTrack(track->position(),track->momentum(),track->charge(),
+			  mass,start_time.t0,start_time.t0_sigma,
+			  start_time.system);
 }
 
 // Add the dEdx data to the track object
