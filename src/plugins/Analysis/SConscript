@@ -26,6 +26,6 @@ optdirs.extend(['Z2pi0_trees','Z2pi_trees','ccal_hits','ccal_display'])
 optdirs.extend(['src-ct'])
 
 optdirs.extend(['retired'])
-    
+
 sbms.OptionallyBuild(env, optdirs)
 

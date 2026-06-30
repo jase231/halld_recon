@@ -6,7 +6,7 @@ Import('*')
 # Default targets (always built)
 subdirs = ['danarest', 'evio_writer', 'evio-hddm']
 subdirs.extend(['pi0bcalskim', 'trackeff_missing','ps_skim', 'trigger_skims', 'exclusivepi0skim', 'randomtrigger_skim', 'pi0fcaltofskim' ])
-subdirs.extend(['omega_skim', 'syncskim', 'epem_ml_skim', 'npp_skim', 'cpp_skim'])
+subdirs.extend(['omega_skim', 'syncskim', 'epem_ml_skim', 'npp_skim', 'cpp_skim', 'production_check'])
 
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
 
@@ -17,6 +17,6 @@ optdirs.extend(['eta2g_primexd_skim','eta6g_primexd_skim','etapi0_primexd_skim' 
 optdirs.extend(['cdcbcal_skim', 'cdc_goodtrack_skim'])
 optdirs.extend(['run_summary', 'track_skimmer' ])
 optdirs.extend(['merge_rawevents'])
-optdirs.extend(['Pi0Finder', 'EventTagPi0','cal_high_energy_skim', 'phi_skim', 'npp_skim', 'cpp_skim'])  
+optdirs.extend(['Pi0Finder', 'EventTagPi0','cal_high_energy_skim', 'phi_skim', 'npp_skim', 'cpp_skim'])
 optdirs.extend(['cdc_amp_t','cdc_echo','cdc_emu','cdc_scan', 'fmwpc_scan'])
 sbms.OptionallyBuild(env, optdirs)
