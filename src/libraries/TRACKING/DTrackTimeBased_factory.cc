@@ -777,70 +777,51 @@ void DTrackTimeBased_factory::GetStartTime(const DTrackWireBased *track,
 					   vector<const DECALHit*>&ecal_hits,
 					   DTrackTimeBased::DStartTime_t &start_time) const {
   // Match to the start counter and the outer detectors
-  double track_t0=track->t0();
-  double locStartTime = track_t0;  // Initial guess from tracking
-  start_time.t0=track_t0;
+  // Initial guess from tracking
+  start_time.t0=track->t0();
   start_time.t0_sigma=2.75; // crude estimate
   start_time.system=track->t0_detector();
  
   // Get start time estimate from Start Counter
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_START),sc_hits,locStartTime)){
-    start_time.t0=locStartTime;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_START),sc_hits,start_time.t0)){
     start_time.t0_sigma=0.3;
     start_time.system=SYS_START;
-
     return;
   }
   // Get start time estimate from TOF
-  locStartTime = track_t0;  // Initial guess from tracking
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_TOF),tof_points,locStartTime)){
-    start_time.t0=locStartTime;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_TOF),tof_points,start_time.t0)){
     start_time.t0_sigma=0.1;
     start_time.system=SYS_TOF;
-
     return;
   }
   // Get start time estimate from FCAL
-  locStartTime = track_t0;  // Initial guess from tracking
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_showers,locStartTime)){
-    start_time.t0=locStartTime;
-    start_time.t0_sigma=0.5;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_showers,start_time.t0)){
+    start_time.t0_sigma=0.75;
     start_time.system=SYS_FCAL;
-
     return;
   }
   // look for matches to single FCAL hits
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_hits,locStartTime)){
-    start_time.t0=locStartTime;
-    start_time.t0_sigma=0.5;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_FCAL),fcal_hits,start_time.t0)){
+    start_time.t0_sigma=0.75;
     start_time.system=SYS_FCAL;
-  
     return;
   }
   // Get start time estimate from ECAL
-  locStartTime = track_t0;  // Initial guess from tracking
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_showers,locStartTime)){
-    start_time.t0=locStartTime;
-    start_time.t0_sigma=0.5;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_showers,start_time.t0)){
+    start_time.t0_sigma=0.45;
     start_time.system=SYS_ECAL;
-
     return;
   }
   // look for matches to single ECAL hits
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_hits,locStartTime)){
-    start_time.t0=locStartTime;
-    start_time.t0_sigma=0.5;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_ECAL),ecal_hits,start_time.t0)){
+    start_time.t0_sigma=0.45;
     start_time.system=SYS_ECAL;
-
     return;
   }
   // Get start time estimate from BCAL
-  locStartTime=track_t0;  // Initial guess from tracking
-  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_BCAL),bcal_showers,locStartTime)){
-    start_time.t0=locStartTime;
-    start_time.t0_sigma=0.5;
+  if (pid_algorithm->Get_StartTime(track->extrapolations.at(SYS_BCAL),bcal_showers,start_time.t0)){
+    start_time.t0_sigma=0.35;
     start_time.system=SYS_BCAL;
-
     return;
   }
 }
