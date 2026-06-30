@@ -55,8 +55,11 @@
 	locCanvas->cd(1);
 	gPad->SetTicks();
 	gPad->SetGrid();
+	gPad->SetName("PSEnergy"); // used by RSAI in filenaming
+	double Nevents = 1.0;
 	if(locHist_PSPairEnergy != NULL)
 	{
+		Nevents = (double)locHist_PSPairEnergy->Integral(0,450);
 		locHist_PSPairEnergy->GetXaxis()->SetTitleSize(0.05);
 		locHist_PSPairEnergy->GetYaxis()->SetTitleSize(0.04);
 		locHist_PSPairEnergy->GetXaxis()->SetLabelSize(0.05);
@@ -65,6 +68,8 @@
 		locHist_PSPairEnergy->GetXaxis()->SetRangeUser(6.,12.);
 		// CPP
 		// locHist_PSPairEnergy->GetXaxis()->SetRangeUser(3.5,8.5);
+		// Low Energy
+                // locHist_PSPairEnergy->GetXaxis()->SetRangeUser(0.7,1.5);
 		locHist_PSPairEnergy->SetStats(0);
 		locHist_PSPairEnergy->Draw();
 		
@@ -106,4 +111,17 @@
 // 		sprintf(str, "%d entries", (uint32_t)locHist_PhiVsTheta_Tracks->GetEntries());
 // 		latex.DrawLatex(10.0, 185.0, str);
 // 	}
+#ifdef ROOTSPY_MACROS
+	// ------ The following is used by RSAI --------
+	if( rs_GetFlag("Is_RSAI")==1 ){
+		auto min_events = rs_GetFlag("MIN_EVENTS_RSAI");
+		//if( min_events < 1 )
+                min_events = 1E4;
+		if( Nevents >= min_events ) {
+			cout << "PS Pair Energy AI check after " << Nevents << " events (>=" << min_events << ")" << endl;
+			rs_SavePad("Kinematics", 1);
+			rs_ResetAllMacroHistos("//HistMacro_Kinematics");
+		}
+	}
+#endif
 }

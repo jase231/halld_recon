@@ -44,13 +44,8 @@ DTrackFitter::DTrackFitter(const std::shared_ptr<const JEvent>& event)
 
 	bfield = geo_manager->GetBfield(run_number);
 	geom = geo_manager->GetDGeometry(run_number);
+	RootGeom = geo_manager->GetRootGeom(run_number);
 
-	RootGeom=NULL;
-	MATERIAL_MAP_MODEL = "DGeometry";
-	app->SetDefaultParameter("TRKFIT:MATERIAL_MAP_MODEL",MATERIAL_MAP_MODEL);
-	if(MATERIAL_MAP_MODEL=="DRootGeom"){
-	  RootGeom = geo_manager->GetRootGeom(run_number);
-	}
 	// Create the extrapolation vectors
 	vector<Extrapolation_t>myvector;
 	extrapolations.emplace(SYS_BCAL,myvector);
@@ -63,6 +58,7 @@ DTrackFitter::DTrackFitter(const std::shared_ptr<const JEvent>& event)
 	extrapolations.emplace(SYS_TRD,myvector);
 	extrapolations.emplace(SYS_FMWPC,myvector);
 	extrapolations.emplace(SYS_CTOF,myvector);
+	extrapolations.emplace(SYS_ECAL,myvector);
 	extrapolations.emplace(SYS_NULL,myvector);	
 
 	extrapolations[SYS_TOF].reserve(1);
@@ -72,9 +68,10 @@ DTrackFitter::DTrackFitter(const std::shared_ptr<const JEvent>& event)
 	extrapolations[SYS_CDC].reserve(200);
 	extrapolations[SYS_START].reserve(1);
 	extrapolations[SYS_DIRC].reserve(1);
-	extrapolations[SYS_TRD].reserve(5);
+	extrapolations[SYS_TRD].reserve(1);
 	extrapolations[SYS_FMWPC].reserve(6);
 	extrapolations[SYS_CTOF].reserve(1);
+	extrapolations[SYS_ECAL].reserve(2);
 	extrapolations[SYS_NULL].reserve(1);
 	
 	pulls.reserve(30);

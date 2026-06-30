@@ -24,6 +24,7 @@ bool filename_from_command_line = false;
 void ParseCommandLineArguments(int &narg, char *argv[]);
 void DecideOutputFilename(JApplication* app);
 void Usage();
+void printNoPluginsBanner();
 
 
 //-----------
@@ -38,7 +39,20 @@ int main(int narg, char *argv[])
 	DApplication dapp(narg, argv);
 	JApplication* app = dapp.GetJApp();
 
-	DecideOutputFilename(app); // Ensure that the command-line flag overrides the OUTPUT_FILENAME parameter
+
+	// Terminating on no plugins
+	bool plugin_check = true;
+	std::string plugins;
+	app->SetDefaultParameter("PLUGIN_CHECK", plugin_check, "Check if plugins are set (default: true)");
+	app->GetParameter("PLUGINS", plugins);
+	if(plugins.empty() && plugin_check == true) {
+		printNoPluginsBanner();
+		return -1; // Exit early if no plugins are specified
+	}
+
+
+	// Ensure that the command-line flag overrides the OUTPUT_FILENAME parameter
+	DecideOutputFilename(app);
 
 	app->SetTimeoutEnabled(false);
 
@@ -95,13 +109,21 @@ void ParseCommandLineArguments(int &narg, char *argv[])
         int nfound=0;
 	for(int i=1;i<narg;i++){
 	  if(argv[i][0] == '-')continue; 
+
+	  // If the argument starts with "ET:" then count it as found,
+	  // without checking if it's an existing file.
+	  if (strncmp(argv[i], "ET:", 3) == 0) {
+	  	nfound++;
+	  	continue;
+	  }else{
+		  // Check if file exists
           if (gSystem->AccessPathName(argv[i])) {
 	      cerr << "File not found: " << argv[i] << endl;
           } else {
 	      nfound++;
           }             
         }
-
+	  }
         if (!nfound) exit(-1); 
 
 }
@@ -155,4 +177,37 @@ void Usage(void)
 	cout<<endl;
 
 	exit(0);
+}
+
+
+//-----------
+// printNoPluginsBanner
+//-----------
+void printNoPluginsBanner() {
+    const std::vector<std::string> banner = {
+		"                                                                              ",
+        "                                                                              ",
+        "                                                                              ",
+        "███    ██  ██████      ██████  ██      ██    ██  ██████  ██ ███    ██ ███████ ",
+        "████   ██ ██    ██     ██   ██ ██      ██    ██ ██       ██ ████   ██ ██      ",
+        "██ ██  ██ ██    ██     ██████  ██      ██    ██ ██   ███ ██ ██ ██  ██ ███████ ",
+        "██  ██ ██ ██    ██     ██      ██      ██    ██ ██    ██ ██ ██  ██ ██      ██ ",
+        "██   ████  ██████      ██      ███████  ██████   ██████  ██ ██   ████ ███████ ",
+        "                                                                              ",
+        "                                                                              ",
+        "                                                                              ",
+        "                                                                              "
+    };
+
+    const std::string RED = "\033[1;31m";
+    const std::string RESET  = "\033[0m";
+
+    std::cout << RED;
+    for (const auto& line : banner) {
+        std::cout << line << std::endl;
+    }
+    std::cout << "ERROR: No plugins specified." << std::endl;
+    std::cout << "         Use the -Pplugins=plugin1,plugin2,... command line option to specify plugins." << std::endl;
+	std::cout << "Terminating....." <<std::endl;
+    std::cout << RESET << std::flush;
 }

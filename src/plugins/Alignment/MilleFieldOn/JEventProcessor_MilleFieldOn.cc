@@ -43,8 +43,8 @@ void JEventProcessor_MilleFieldOn::Init() {
   milleWriter = new Mille(output_filename.data());
 }
 
-void JEventProcessor_MilleFieldOn::BeginRun(const std::shared_ptr<const JEvent> &event, int32_t runnumber) {
-  // This is called whenever the run number changes
+void JEventProcessor_MilleFieldOn::BeginRun(const std::shared_ptr<const JEvent> &event) {
+   // This is called whenever the run number changes
   // Check for magnetic field
   bool dIsNoFieldFlag = (dynamic_cast<const DMagneticFieldMapNoField *>(DEvent::GetBfield(event)) != nullptr);
 
@@ -58,7 +58,7 @@ void JEventProcessor_MilleFieldOn::BeginRun(const std::shared_ptr<const JEvent> 
   }
 }
 
-void JEventProcessor_MilleFieldOn::Process(const std::shared_ptr<const JEvent> &event, uint64_t eventnumber) {
+void JEventProcessor_MilleFieldOn::Process(const std::shared_ptr<const JEvent> &event) {
 
   int straw_offset[29] = {0,    0,    42,   84,   138,  192,  258,  324,
                           404,  484,  577,  670,  776,  882,  1005, 1128,
@@ -90,8 +90,8 @@ void JEventProcessor_MilleFieldOn::Process(const std::shared_ptr<const JEvent> &
     int pullsNDF = -5;
     for (size_t iPull = 0; iPull < pulls.size(); ++iPull) {
       const DCDCTrackHit *cdc_hit = pulls[iPull].cdc_hit;
-      float err = pulls[iPull].err;
-      float errc = pulls[iPull].errc;
+      float err = sqrt(pulls[iPull].var);
+      float errc = sqrt(pulls[iPull].varc);
       if (cdc_hit == nullptr) {
         pullsNDF += 2;
         isCDCOnly = false;
@@ -110,11 +110,11 @@ void JEventProcessor_MilleFieldOn::Process(const std::shared_ptr<const JEvent> &
     GetLockService(event)->RootWriteLock();  // Just use the root lock as a temporary
     for (size_t iPull = 0; iPull < pulls.size(); ++iPull) {
       float resi = pulls[iPull].resi;  // residual of measurement
-      float err = pulls[iPull].err;    // estimated error of measurement
+      float err = sqrt(pulls[iPull].var);    // estimated error of measurement
       const DCDCTrackHit *cdc_hit = pulls[iPull].cdc_hit;
       const DFDCPseudo *fdc_hit = pulls[iPull].fdc_hit;
       float resic = pulls[iPull].resic;  // residual for FDC cathode measurement
-      float errc = pulls[iPull].errc;
+      float errc = sqrt(pulls[iPull].varc);
 
       vector<double> der = pulls[iPull].trackDerivatives;
 

@@ -3,6 +3,7 @@
 
 #include "DBeamCurrent_factory.h"
 #include "DBeamHelicity_factory.h"
+#include "DBeamHelicity_factory_CORRECTED.h"
 #include "Df250Config.h"
 #include "Df250PulseIntegral.h"
 #include "Df250StreamingRawData.h"
@@ -46,12 +47,15 @@
 #include "DDIRCADCHit.h"
 #include "DGEMSRSWindowRawData.h"
 #include "DHELIDigiHit.h"
+#include "DHelicityData.h"
+#include "DHelicityDataTriggerTime.h"
 #include "Df125EmulatorAlgorithm_factory.h"
 #include "Df125EmulatorAlgorithm_factory_v2.h"
 #include "Df250EmulatorAlgorithm_factory.h"
 #include "Df250EmulatorAlgorithm_factory_v1.h"
 #include "Df250EmulatorAlgorithm_factory_v2.h"
 #include "Df250EmulatorAlgorithm_factory_v3.h"
+#include "DBadHit.h"
 
 #include <JANA/JFactorySet.h>
 
@@ -60,7 +64,8 @@
 void DAQ_init(JFactorySet *factorySet) {
 
     factorySet->Add(new DBeamCurrent_factory());
-	factorySet->Add(new DBeamHelicity_factory());
+    factorySet->Add(new DBeamHelicity_factory());
+    factorySet->Add(new DBeamHelicity_factory_CORRECTED());
     factorySet->Add(new Df125EmulatorAlgorithm_factory());
     factorySet->Add(new Df125EmulatorAlgorithm_factory_v2());
     factorySet->Add(new Df250EmulatorAlgorithm_factory());
@@ -98,7 +103,7 @@ void DAQ_init(JFactorySet *factorySet) {
     factorySet->Add(new JFactoryT<DTSscalers>());
     factorySet->Add(new JFactoryT<DEPICSvalue>());
     factorySet->Add(new JFactoryT<DEventTag>());
-	factorySet->Add(new JFactoryT<DHELIDigiHit>());
+    factorySet->Add(new JFactoryT<DHELIDigiHit>());
     factorySet->Add(new JFactoryT<Df250BORConfig>());
     factorySet->Add(new JFactoryT<Df125BORConfig>());
     factorySet->Add(new JFactoryT<DF1TDCBORConfig>());
@@ -111,5 +116,8 @@ void DAQ_init(JFactorySet *factorySet) {
     factorySet->Add(new JFactoryT<DDIRCTDCHit>());
     factorySet->Add(new JFactoryT<DDIRCADCHit>());
     factorySet->Add(new JFactoryT<DGEMSRSWindowRawData>());
+    factorySet->Add(new JFactoryT<DHelicityData>());
+    factorySet->Add(new JFactoryT<DHelicityDataTriggerTime>());
+    factorySet->Add(new JFactoryT<DBadHit>());
 }
 

@@ -159,7 +159,7 @@ class DGeometry{
       bool GetBCALDepth(float &bcal_depth) const; ///< depth (or height) of BCAL module in cm
       bool GetBCALPhiShift(float &bcal_phi_shift) const; ///< phi angle in degrees that first BCAL module is shifted from being centered at ph=0.0
 
-      bool GetECALZ(double &z_ecal) const; /// z-location of front face of CCAL in cm
+      bool GetECALZ(double &z_ecal) const; /// z-location of front face of ECAL in cm
 
       bool GetCCALZ(double &z_ccal) const; /// z-location of front face of CCAL in cm
 
@@ -181,8 +181,11 @@ class DGeometry{
       bool GetTargetLength(double &target_length) const; ///< z-location of center of target
 
       bool GetTRDZ(vector<double> &z_trd) const; ///< z-locations for each of the TRD/GEM planes in cm       // REDO these for new geometry 
-      //bool GetTRDXY(vector<double> &z_trd) const; ///< z-locations for each of the TRD/GEM planes in cm    // REDO these for new geometry 
-      
+      //bool GetTRDXY(vector<double> &z_trd) const; ///< z-locations for each of the TRD/GEM planes in cm    // REDO these for new geometry
+      bool GetGEMTRDz(double &z_trd) const;
+  bool GetGEMTRDxy_vec(vector<double>&xvec, vector<double>&yvec) const;
+  bool GetGEMTRDsize(double &xsize,double &ysize,double &zsize) const;
+  
       bool GetFCALPosition(double &x,double &y,double &z) const;
       bool GetECALPosition(double &x,double &y,double &z) const;
       bool GetCCALPosition(double &x,double &y,double &z) const;
@@ -229,6 +232,7 @@ class DGeometry{
       mutable pthread_mutex_t materialmap_mutex;
       mutable pthread_mutex_t materials_mutex;
 
+  bool PRINT_POSITIONS;
 
 };
 

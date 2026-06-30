@@ -505,6 +505,14 @@ bool DEventSourceHDDM::GetObjects(const std::shared_ptr<const JEvent> &event, JF
    if (dataClassName == "DTPOLTruthHit")
       return Extract_DTPOLTruthHit(record,
                      dynamic_cast<JFactoryT<DTPOLTruthHit>*>(factory), tag);
+   
+   if (dataClassName == "DTRDTruthPoint")
+      return Extract_DTRDTruthPoint(record, 
+                     dynamic_cast<JFactoryT<DTRDTruthPoint>*>(factory), tag);
+
+   if (dataClassName == "DTRDHit")
+      return Extract_DTRDHit(record, 
+                     dynamic_cast<JFactoryT<DTRDHit>*>(factory), tag);
 
    return false; // OBJECT_NOT_AVAILABLE;
 }
@@ -1173,9 +1181,14 @@ bool DEventSourceHDDM::Extract_DMCReaction(hddm_s::HDDM *record,
       const hddm_s::BeamList &beams = record->getBeams();
       if (beams.size() > 0) {
          hddm_s::Beam &beam = iter->getBeam();
-         DVector3 mom(beam.getMomentum().getPx(),
-                      beam.getMomentum().getPy(),
-                      beam.getMomentum().getPz());
+         hddm_s::Momentum &mome = beam.getMomentum();
+         DVector3 mom(mome.getPx(), mome.getPy(), mome.getPz());
+         hddm_s::Momentum_doubleList momd = mome.getMomentum_doubles();
+         if (momd.size() > 0) {
+            mom[0] = momd(0).getPx();
+            mom[1] = momd(0).getPy();
+            mom[2] = momd(0).getPz();
+         }
          mcreaction->beam.setPosition(locPosition);
          mcreaction->beam.setMomentum(mom);
          mcreaction->beam.setPID(Gamma);
@@ -1193,9 +1206,14 @@ bool DEventSourceHDDM::Extract_DMCReaction(hddm_s::HDDM *record,
       if (targets.size() > 0) {
          hddm_s::Target &target = iter->getTarget();
          DKinematicData target_kd;
-         DVector3 mom(target.getMomentum().getPx(),
-                      target.getMomentum().getPy(),
-                      target.getMomentum().getPz());
+         hddm_s::Momentum &mome = target.getMomentum();
+         DVector3 mom(mome.getPx(), mome.getPy(), mome.getPz());
+         hddm_s::Momentum_doubleList momd = mome.getMomentum_doubles();
+         if (momd.size() > 0) {
+            mom[0] = momd(0).getPx();
+            mom[1] = momd(0).getPy();
+            mom[2] = momd(0).getPz();
+         }
          mcreaction->target.setPosition(locPosition);
          mcreaction->target.setMomentum(mom);
          hddm_s::PropertiesList &properties = target.getPropertiesList();
@@ -1250,10 +1268,18 @@ bool DEventSourceHDDM::Extract_DMCThrown(hddm_s::HDDM *record,
       }
       hddm_s::ProductList::iterator piter;
       for (piter = prods.begin(); piter != prods.end(); ++piter) {
-         double E  = piter->getMomentum().getE();
-         double px = piter->getMomentum().getPx();
-         double py = piter->getMomentum().getPy();
-         double pz = piter->getMomentum().getPz();
+         hddm_s::Momentum &mome = piter->getMomentum();
+         double E  = mome.getE();
+         double px = mome.getPx();
+         double py = mome.getPy();
+         double pz = mome.getPz();
+         hddm_s::Momentum_doubleList momd = mome.getMomentum_doubles();
+         if (momd.size() > 0) {
+            E  = momd(0).getE();
+            px = momd(0).getPx();
+            py = momd(0).getPy();
+            pz = momd(0).getPz();
+         }
          double mass = sqrt(E*E - (px*px + py*py + pz*pz));
          if (!isfinite(mass))
             mass = 0.0;
@@ -2373,12 +2399,16 @@ bool DEventSourceHDDM::Extract_DTrackTimeBased(hddm_s::HDDM *record,
    const hddm_s::TracktimebasedList &ttbs = record->getTracktimebaseds();
    hddm_s::TracktimebasedList::iterator iter;
    for (iter = ttbs.begin(); iter != ttbs.end(); ++iter) {
-      DVector3 mom(iter->getMomentum().getPx(),
-                   iter->getMomentum().getPy(),
-                   iter->getMomentum().getPz());
-      DVector3 pos(iter->getOrigin().getVx(),
-                   iter->getOrigin().getVy(),
-                   iter->getOrigin().getVz());
+      hddm_s::Momentum &mome = iter->getMomentum();
+      hddm_s::Origin &orig = iter->getOrigin();
+      DVector3 mom(mome.getPx(), mome.getPy(), mome.getPz());
+      hddm_s::Momentum_doubleList momd = mome.getMomentum_doubles();
+      if (momd.size() > 0) {
+         mom[0] = momd(0).getPx();
+         mom[1] = momd(0).getPy();
+         mom[2] = momd(0).getPz();
+      }
+      DVector3 pos(orig.getVx(), orig.getVy(), orig.getVz());
       DTrackTimeBased *track = new DTrackTimeBased();
       track->setMomentum(mom);
       track->setPosition(pos);
@@ -2484,6 +2514,7 @@ bool DEventSourceHDDM::Extract_DTAGMHit(hddm_s::HDDM *record,
             DTAGMHit *taghit = new DTAGMHit();
             taghit->E = hiter->getE();
             taghit->t = hiter->getT();
+            taghit->time_tdc = hiter->getT();
             taghit->npix_fadc = hiter->getNpe();
             taghit->time_fadc = hiter->getTADC();
             taghit->column = hiter->getColumn();
@@ -2500,6 +2531,7 @@ bool DEventSourceHDDM::Extract_DTAGMHit(hddm_s::HDDM *record,
             DTAGMHit *taghit = new DTAGMHit();
             taghit->E = hiter->getE();
             taghit->t = hiter->getT();
+            taghit->time_tdc = hiter->getT();
             taghit->npix_fadc = hiter->getDE() * 1e5; // ~1e5 pixels/GeV
             taghit->time_fadc = hiter->getT();
             taghit->column = hiter->getColumn();
@@ -2553,6 +2585,7 @@ bool DEventSourceHDDM::Extract_DTAGHHit( hddm_s::HDDM *record,
             DTAGHHit *taghit = new DTAGHHit();
             taghit->E = hiter->getE();
             taghit->t = hiter->getT();
+            taghit->time_tdc = hiter->getT();
             taghit->npe_fadc = hiter->getNpe();
             taghit->time_fadc = hiter->getTADC();
             taghit->counter_id = hiter->getCounterId();
@@ -2568,6 +2601,7 @@ bool DEventSourceHDDM::Extract_DTAGHHit( hddm_s::HDDM *record,
             DTAGHHit *taghit = new DTAGHHit();
             taghit->E = hiter->getE();
             taghit->t = hiter->getT();
+            taghit->time_tdc = hiter->getT();
             taghit->npe_fadc = hiter->getDE() * 5e5; // ~5e5 pe/GeV
             taghit->time_fadc = hiter->getT();
             taghit->counter_id = hiter->getCounterId();
@@ -3272,4 +3306,79 @@ bool DEventSourceHDDM::Extract_DDIRCTruthPmtHit(hddm_s::HDDM *record,
   factory->Set(data);
 
   return true; //NOERROR;
+}
+
+//------------------
+// Extract_DTRDTruthPoint
+//------------------
+bool DEventSourceHDDM::Extract_DTRDTruthPoint(hddm_s::HDDM *record,
+                                   JFactoryT<DTRDTruthPoint> *factory, string tag)
+{
+   /// Copies the data from the given hddm_s structure. This is called
+   /// from JEventSourceHDDM::GetObjects. If factory is NULL, this
+   /// returns OBJECT_NOT_AVAILABLE immediately.
+
+   if (factory == NULL)
+     return false; //OBJECT_NOT_AVAILABLE;
+   if (tag != "")
+     return false; //OBJECT_NOT_AVAILABLE;
+  
+   vector<DTRDTruthPoint*> data;
+
+   const hddm_s::GemtrdTruthPointList &points = record->getGemtrdTruthPoints();
+   hddm_s::GemtrdTruthPointList::iterator iter;
+   for (iter = points.begin(); iter != points.end(); ++iter) {
+      DTRDTruthPoint *trdtruth = new DTRDTruthPoint;
+      trdtruth->primary = iter->getPrimary();
+      trdtruth->track   = iter->getTrack();
+      trdtruth->x       = iter->getX();
+      trdtruth->y       = iter->getY();
+      trdtruth->z       = iter->getZ();
+      trdtruth->t       = iter->getT();
+      trdtruth->px      = iter->getPx();
+      trdtruth->py      = iter->getPy();
+      trdtruth->pz      = iter->getPz();
+      trdtruth->E       = iter->getE();
+      trdtruth->ptype   = iter->getPtype();
+      const hddm_s::TrackIDList &ids = iter->getTrackIDs();
+      trdtruth->itrack = (ids.size())? ids.begin()->getItrack() : 0;
+      data.push_back(trdtruth);
+   }
+
+   // Copy into factory
+   factory->Set(data);
+
+   return true; // NOERROR;
+}
+
+//------------------
+// Extract_DTRDHit
+//------------------
+bool DEventSourceHDDM::Extract_DTRDHit(hddm_s::HDDM *record,  JFactoryT<DTRDHit> *factory, string tag)
+{
+   /// Copies the data from the given hddm_s record. This is called
+   /// from JEventSourceHDDM::GetObjects. If factory is NULL, this
+   /// returns OBJECT_NOT_AVAILABLE immediately.
+
+  if (factory == NULL) return false; // OBJECT_NOT_AVAILABLE;
+  if (tag != "") return false; // OBJECT_NOT_AVAILABLE;
+
+   vector<DTRDHit*> data;
+
+   const hddm_s::GemtrdHitList &points = record->getGemtrdHits();
+   hddm_s::GemtrdHitList::iterator iter;
+   for (iter = points.begin(); iter != points.end(); ++iter) {
+      DTRDHit *hit = new DTRDHit;
+      hit->plane = iter->getPlane();
+      hit->strip = iter->getStrip();
+      hit->q = iter->getQ();
+      hit->pulse_height=hit->q;
+      hit->t     = iter->getT();
+      data.push_back(hit);
+   }
+
+   // Copy into factory
+   factory->Set(data);
+
+   return true; // NOERROR;
 }

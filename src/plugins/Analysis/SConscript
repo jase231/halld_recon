@@ -9,21 +9,21 @@ subdirs.extend(['DAQTree', 'DAQTreeBCAL'])
 subdirs.extend(['monitoring_hists'])
 subdirs.extend(['p2pi_hists','p3pi_hists','ppi0gamma_hists'])
 subdirs.extend(['fcal_charged','TPOL_tree','mcthrown_tree'])
-subdirs.extend(['trackeff_hists','imaging','dirc_reactions','TRD_hists'])
+subdirs.extend(['imaging','dirc_hists','TRD_hists','compton'])
 SConscript(dirs=subdirs, exports='env osname', duplicate=0)
 
 
 # Optional targets
 optdirs = ['pedestals','bcal_calib','bcal_calib_cosmic_cdc', 'CPPMVAtree']
 
-optdirs.extend(['mcthrown_hists', 'cdc_hists', 'fcal_hists'])
+optdirs.extend(['trackeff_hists', 'mcthrown_hists', 'cdc_hists', 'fcal_hists'])
 optdirs.extend(['p4pi_hists','p2k_hists','p2gamma_hists','p2pi0_hists'])
 optdirs.extend(['B3pi_eff_missgamma','B3pi_eff_misspip','B3pi_eff_misspim','B3pi_eff_missprot'])
-subdirs.extend(['pid_dirc','truth_dirc', 'lut_dirc', 'dirc_hists', 'dirc_tree'])
+subdirs.extend(['pid_dirc','truth_dirc', 'lut_dirc', 'dirc_reactions', 'dirc_tree'])
 optdirs.extend(['dc_alignment','p2pi_trees','fcal_led','F250_mode10_pedestal'])
 optdirs.extend(['npp_hists','cpp_hists'])
 optdirs.extend(['Z2pi0_trees','Z2pi_trees','ccal_hits','ccal_display'])
-optdirs.extend(['compton','src-ct'])
+optdirs.extend(['src-ct'])
 
 optdirs.extend(['retired'])
     

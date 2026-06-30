@@ -24,7 +24,7 @@
 
 using namespace std;
 
-#define QuietNaN std::numeric_limits<double>::quiet_NaN()
+#define Quiet_NaN std::numeric_limits<double>::quiet_NaN()
 
 
 class DReferenceTrajectory;
@@ -98,14 +98,14 @@ class DTrackFitter: public JObject{
 
 		class pull_t{
 		public:
-		pull_t(double resi, double err,double s=0.0,
+		pull_t(double resi, double var,double s=0.0,
 		       double tdrift=0.0, double d=0.0,
 		       const DCDCTrackHit *cdc_hit=NULL,
 		       const DFDCPseudo *fdc_hit=NULL, double docaphi=0.0,
-		       double z=0.0, double cosThetaRel=0.0,double tcorr=0.0,double resic=0.0,
-		       double errc=0.0, int left_right=0):resi(resi),err(err),s(s),tdrift(tdrift),d(d),cdc_hit(cdc_hit),fdc_hit(fdc_hit),docaphi(docaphi),z(z),cosThetaRel(cosThetaRel),tcorr(tcorr),resic(resic),errc(errc),left_right(left_right){}
+		       double z=0.0,double tcorr=0.0,double resic=0.0,
+		       double varc=0.0, int left_right=0):resi(resi),var(var),s(s),tdrift(tdrift),d(d),cdc_hit(cdc_hit),fdc_hit(fdc_hit),docaphi(docaphi),z(z),tcorr(tcorr),resic(resic),varc(varc),left_right(left_right){}
 		    double resi;	// residual of measurement
-		    double err;		// estimated error of measurement
+		    double var;		// estimated variance of measurement
 		    double s;
 		    double tdrift;      // drift time of this measurement
 		    double d;  // doca to wire
@@ -113,10 +113,9 @@ class DTrackFitter: public JObject{
 		    const DFDCPseudo *fdc_hit;
 		    double docaphi; // phi of doca in CDC straws
 		    double z;// z position at doca
-		    double cosThetaRel; // dot product between track and wire directions
 		    double tcorr; // drift time with correction for B
 		    double resic; // residual for FDC cathode measuremtns
-		    double errc;
+		    double varc;
 		    int left_right;  // left-right info. of the wire plane (-1: left or +1: right)
           vector<double> trackDerivatives;
           inline void AddTrackDerivatives(vector<double> d){ trackDerivatives = d;}
@@ -152,6 +151,7 @@ class DTrackFitter: public JObject{
 		  extrapolations[SYS_TRD].clear();
 		  extrapolations[SYS_FMWPC].clear();
 		  extrapolations[SYS_CTOF].clear();
+		  extrapolations[SYS_ECAL].clear();
 		};
 		
 		// Fit parameter accessor methods
@@ -177,7 +177,7 @@ class DTrackFitter: public JObject{
 		void SetInputParameters(const DTrackingData &starting_params){input_params=starting_params;}
 		
 		// Wrappers
-		fit_status_t FitTrack(const DVector3 &pos, const DVector3 &mom, double q, double mass,double t0=QuietNaN,DetectorSystem_t t0_det=SYS_NULL);
+		fit_status_t FitTrack(const DVector3 &pos, const DVector3 &mom, double q, double mass,double t0=Quiet_NaN,DetectorSystem_t t0_det=SYS_NULL);
 		fit_status_t FitTrack(const DTrackingData &starting_params);
 		
 		// Methods that actually do something
@@ -186,7 +186,7 @@ class DTrackFitter: public JObject{
 				      const DReferenceTrajectory *rt, 
 				      const std::shared_ptr<const JEvent> &loop, double mass=-1.0,
 				      int N=0,
-				      double t0=QuietNaN,
+				      double t0=Quiet_NaN,
 				      DetectorSystem_t t0_det=SYS_NULL
 				      ); ///< mass<0 means get it from starting_params
 		fit_status_t 
@@ -260,7 +260,6 @@ class DTrackFitter: public JObject{
 
 	private:
 		int DEBUG_LEVEL;
-		string MATERIAL_MAP_MODEL;			
 
 		// Prohibit default constructor
 		DTrackFitter();

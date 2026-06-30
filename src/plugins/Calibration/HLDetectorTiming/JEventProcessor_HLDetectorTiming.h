@@ -15,6 +15,7 @@
 #include <BCAL/DBCALUnifiedHit.h>
 #include <CDC/DCDCHit.h>
 #include <FCAL/DFCALHit.h>
+#include <ECAL/DECALHit.h>
 #include <FDC/DFDCHit.h>
 #include <TOF/DTOFHit.h>
 #include <TOF/DTOFPoint.h>
@@ -153,6 +154,12 @@ class JEventProcessor_HLDetectorTiming:public JEventProcessor{
 		map<string, TH2F*> dFCALHitTimesPerChannel;
 		map<string, TH1F*> dFCALTotalEnergy;
 
+		map<string, TH1F*> dECALHitTimes;
+		map<string, TH2F*> dECALHitOccupancy;
+		map<string, TH2F*> dECALHitLocalTimes;
+		map<string, TH2F*> dECALHitTimesPerChannel;
+		map<string, TH1F*> dECALTotalEnergy;
+
 		map<string, TH1F*> dCCALHitTimes;
 		map<string, TH2F*> dCCALHitOccupancy;
 		map<string, TH2F*> dCCALHitLocalTimes;
@@ -215,7 +222,11 @@ class JEventProcessor_HLDetectorTiming:public JEventProcessor{
 		map<string, TH1F*> dCDCSCTime;
 		map<string, TH1F*> dCDCBCALTime;
 		map<string, TH1F*> dTOFRFTime;
-		map<string, TH1F*> dTOFSCTime;
+		map<string, TH2F*> dTOFRFTimeVSBCALRFTime;
+		map<string, TH2F*> dTOFRFTimeVSFCALRFTime;
+		map<string, TH2F*> dTOFRFTimeVSECALRFTime;
+
+                map<string, TH1F*> dTOFSCTime;
 		map<string, TH1F*> dEarliestCDCTime;
 		map<string, TH1F*> dEarliestFDCTime;
 		map<string, TH1F*> dBCALShowerRFTime;
@@ -223,12 +234,16 @@ class JEventProcessor_HLDetectorTiming:public JEventProcessor{
 		map<string, TH2F*> dBCALShowerSCTimeVsCorrection;
 		map<string, TH1F*> dFCALShowerRFTime;
 		map<string, TH1F*> dFCALShowerSCTime;
+		map<string, TH1F*> dECALShowerRFTime;
+		map<string, TH1F*> dECALShowerSCTime;
 
 		
 		map<string, TH1F*> dBCALShowerRFTime_NoTracks;
 		map<string, TH2F*> dBCALShowerRFTimeVsEnergy_NoTracks;
 		map<string, TH1F*> dFCALShowerRFTime_NoTracks;
 		map<string, TH2F*> dFCALShowerRFTimeVsEnergy_NoTracks;
+		map<string, TH1F*> dECALShowerRFTime_NoTracks;
+		map<string, TH2F*> dECALShowerRFTimeVsEnergy_NoTracks;
 		map<string, TH1F*> dCCALShowerRFTime_NoTracks;
 		map<string, TH2F*> dCCALShowerRFTimeVsEnergy_NoTracks;
 		map<string, TH1F*> dTOFShowerRFTime_NoTracks;

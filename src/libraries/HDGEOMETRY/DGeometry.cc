@@ -42,6 +42,9 @@ DGeometry::DGeometry(JGeometry *jgeom, DGeometryManager *dgeoman, JApplication* 
 	pthread_mutex_init(&materials_mutex, nullptr);
 
 	ReadMaterialMaps();
+
+	PRINT_POSITIONS=false;
+	app->SetDefaultParameter("GEOMETRY:PRINT_POSITIONS",PRINT_POSITIONS);
 }
 
 //---------------------------------
@@ -1194,25 +1197,22 @@ bool DGeometry::GetFDCWires(vector<vector<DFDCWire *> >&fdcwires) const{
    // Get offsets tweaking nominal geometry from calibration database
    JCalibration * jcalib = jcalman->GetJCalibration(runnumber);
    vector<map<string,double> >vals;
-   vector<fdc_wire_offset_t>fdc_wire_offsets;
+   vector<double>fdc_wire_z_offsets;
    if (jcalib->Get("FDC/wire_alignment",vals)==false){
       for(unsigned int i=0; i<vals.size(); i++){
          map<string,double> &row = vals[i];
-
-         // Get the offsets from the calibration database 
-         fdc_wire_offset_t temp;
-         temp.du=row["dU"];
-         //temp.du=0.;
-
-         temp.dphi=row["dPhi"];
-         //temp.dphi=0.;
-
-         temp.dz=row["dZ"];
-         //  temp.dz=0.;
-
-         fdc_wire_offsets.push_back(temp);
+         fdc_wire_z_offsets.push_back(row["dZ"]);
       }
    }
+   vector<double>fdc_wire_u_offsets;
+   vector<double>fdc_wire_v_offsets;
+   if (jcalib->Get("FDC/cell_offsets",vals)==false){
+    for(unsigned int i=0; i<vals.size(); i++){
+      map<string,double> &row = vals[i];
+      fdc_wire_u_offsets.push_back(row["xshift"]);
+      fdc_wire_v_offsets.push_back(row["yshift"]);
+    }
+  }
 
    vector<fdc_wire_rotation_t>fdc_wire_rotations;
    if (jcalib->Get("FDC/cell_rotations",vals)==false){
@@ -1231,8 +1231,9 @@ bool DGeometry::GetFDCWires(vector<vector<DFDCWire *> >&fdcwires) const{
 
    // Generate the vector of wire plane parameters
    for(int i=0; i<FDC_NUM_LAYERS; i++){
-      double angle=-stereo_angles[i]*M_PI/180.+fdc_wire_offsets[i].dphi;
-
+     double angle=-stereo_angles[i]*M_PI/180.;
+     double angle2=angle + M_PI_2;
+     
       vector<DFDCWire *>temp;
       for(int j=0; j<WIRES_PER_PLANE; j++){
          unsigned int pack_id=i/6;
@@ -1244,19 +1245,21 @@ bool DGeometry::GetFDCWires(vector<vector<DFDCWire *> >&fdcwires) const{
 
          // find coordinates of center of wire in rotated system
          float u = U_OF_WIRE_ZERO + WIRE_SPACING*(float)(j);
-         w->u=u+fdc_wire_offsets[i].du;
+         w->u=u+fdc_wire_u_offsets[i];
 
          // Rotate coordinates into lab system and set the wire's origin
          // Note that the FDC measures "angle" such that angle=0
          // corresponds to the anode wire in the vertical direction
          // (i.e. at phi=90 degrees).
-         float x = u*sin(angle + M_PI/2.0);
-         float y = u*cos(angle + M_PI/2.0);
+         float x = u*sin(angle2);
+         float y = u*cos(angle2);
          w->origin.SetXYZ(x,y,0.);
          w->origin.RotateX(ThetaX[pack_id]+fdc_wire_rotations[i].dPhiX);
          w->origin.RotateY(ThetaY[pack_id]+fdc_wire_rotations[i].dPhiY);
          w->origin.RotateZ(ThetaZ[pack_id]+fdc_wire_rotations[i].dPhiZ);
-         DVector3 globalOffsets(dX[pack_id],dY[pack_id],z_wires[i]+fdc_wire_offsets[i].dz);
+         DVector3 globalOffsets(dX[pack_id]-fdc_wire_v_offsets[i]*cos(angle2),
+				dY[pack_id]+fdc_wire_v_offsets[i]*sin(angle2),
+				z_wires[i]+fdc_wire_z_offsets[i]);
          w->origin+=globalOffsets;
 
          // Length of wire is set by active radius
@@ -1786,6 +1789,11 @@ bool DGeometry::GetECALZ(double &z_ecal) const
       jgeom->SetVerbose(1);   // reenable error messages
      
       z_ecal += FCALCenter[2]+CrystalEcalpos[2]-0.5*block[2];
+
+      if (PRINT_POSITIONS){
+	cout << "ECAL front position: " << z_ecal << " cm" << endl;
+      }
+      
       return true;
     }
   }
@@ -1996,6 +2004,11 @@ bool DGeometry::GetFCALZ(double &z_fcal) const
       return false;
    }else{
       z_fcal = ForwardEMcalpos[2];
+
+      if (PRINT_POSITIONS){
+	cout << "FCAL front position: " << z_fcal << " cm" << endl;
+      }
+      
       return true;
    }
 }
@@ -2179,6 +2192,83 @@ bool DGeometry::GetDIRCZ(double &z_dirc) const
 }
 
 //---------------------------------
+// GetGEMTRDz
+//---------------------------------
+bool DGeometry::GetGEMTRDz(double &z_gemtrd) const
+{
+  z_gemtrd=9999.;
+  vector<double> origin;
+  jgeom->SetVerbose(0);   // don't print error messages for optional detector elements
+  bool good = Get("//section/composition/posXYZ[@volume='GEMTRD']/@X_Y_Z",origin);
+  jgeom->SetVerbose(1);   // reenable error messages
+
+  if(!good){
+    _DBG_<<"Unable to retrieve GEMTRD position."<<endl;
+    return false;
+  }
+
+  vector<double>readout;
+  Get("//posXYZ[@volume='GTRO']/@X_Y_Z",readout);
+ 
+  z_gemtrd=origin[2]+readout[2];
+  
+  if (PRINT_POSITIONS){
+    cout << "GEMTRD readout position: z=" << z_gemtrd << " cm" << endl;
+  }
+  
+  return true;
+}
+
+//---------------------------------
+// GetGEMTRDxy_vec
+//---------------------------------
+bool DGeometry::GetGEMTRDxy_vec(vector<double>&xvec, vector<double>&yvec) const
+{
+  vector<double> TRDorigin;
+  jgeom->SetVerbose(0);   // don't print error messages for optional detector elements
+  bool good = Get("//section/composition/posXYZ[@volume='GEMTRD']/@X_Y_Z",TRDorigin);
+  jgeom->SetVerbose(1);   // reenable error messages
+
+  if(!good){
+    _DBG_<<"Unable to retrieve GEMTRD position."<<endl;
+    return false;
+  }
+  vector<double>TRDModulePos;
+  Get("//posXYZ[@volume='gemTRDmodule']/@X_Y_Z/layer[@value='1']", TRDModulePos);
+  vector<double>TRDModuleCenter;
+  Get("//posXYZ[@volume='gemSensitiveVolume']/@X_Y_Z", TRDModuleCenter);
+  
+  xvec.push_back(TRDorigin[0]+TRDModulePos[0]+TRDModuleCenter[0]);
+  yvec.push_back(TRDorigin[1]+TRDModulePos[1]+TRDModuleCenter[1]);
+  if (PRINT_POSITIONS){
+    cout << "GEMTRD position: x=" << xvec[xvec.size()-1] << " cm" << endl;
+    cout << "GEMTRD position: y=" << yvec[xvec.size()-1] << " cm" << endl;
+  }
+  
+  return true;
+}
+
+//---------------------------------
+// GetGEMTRDsize
+//---------------------------------
+
+bool DGeometry::GetGEMTRDsize(double &xsize,double &ysize, double &zsize) const
+{
+  vector<double> TRDdimensions;
+  jgeom->SetVerbose(0);   // don't print error messages for optional detector elements
+  bool good = Get("//box[@name='GTSV']/@X_Y_Z",TRDdimensions);
+  jgeom->SetVerbose(1);   // reenable error messages
+
+  if (good){
+    xsize=TRDdimensions[0];
+    ysize=TRDdimensions[1];
+    zsize=TRDdimensions[2];
+  }
+  return false;
+}
+
+
+//---------------------------------
 // GetTRDZ
 //---------------------------------
 bool DGeometry::GetTRDZ(vector<double> &z_trd) const
@@ -2228,6 +2318,11 @@ bool DGeometry::GetTOFZ(double &CenterVPlane,double &CenterHPlane,
   // also save position midway between the two planes
   CenterMPlane=0.5*(CenterHPlane+CenterVPlane);
 
+  if (PRINT_POSITIONS){
+    cout << "TOF plane#1 z=" << CenterHPlane << " cm" <<endl;
+    cout << "TOF plane#2 z=" << CenterVPlane << " cm" <<endl;
+  }
+  
   return true;
 }
 
@@ -2473,6 +2568,11 @@ bool DGeometry::GetTargetZ(double &z_target) const
    if(gluex_target_exists) {
      z_target = xyz_vessel[2] + xyz_target[2] + xyz_detector[2];
      jgeom->SetVerbose(1);   // reenable error messages
+     
+     if (PRINT_POSITIONS){
+       cout << "Target center z=" << z_target << " cm " << endl;
+     }
+     
      return true;
    }
 
@@ -2657,6 +2757,7 @@ bool DGeometry::GetStartCounterGeom(vector<vector<DVector3> >&pos,
     	loaded_paddle_offsets = true;
     
     // Create vectors of positions and normal vectors for each paddle
+    DVector3 nose_position;
     for (unsigned int i=0;i<30;i++){
       double phi=ThetaZ+dSCdphi*(double(i)+0.5);
       double sinphi=sin(phi);
@@ -2707,12 +2808,23 @@ bool DGeometry::GetStartCounterGeom(vector<vector<DVector3> >&pos,
 	dirvec.push_back(dir);
 	posvec.push_back(DVector3(oldray.X()+dx,oldray.Y()+dy,oldray.Z()+z0));
       }
+
+      if (PRINT_POSITIONS){
+	nose_position+=posvec[posvec.size()-1];
+      }
+      
       posvec.push_back(DVector3(ray.X()+dx,ray.Y()+dy,ray.Z()+z0)); //SAVE THE ENDPOINT OF THE LAST PLANE
       pos.push_back(posvec);
       norm.push_back(dirvec);
 		  
       posvec.clear();
       dirvec.clear();
+    }
+    
+    if (PRINT_POSITIONS){
+      nose_position*=1./30.;
+      cout << "Start counter nose position:" <<endl;
+      nose_position.Print();
     }
     
   }

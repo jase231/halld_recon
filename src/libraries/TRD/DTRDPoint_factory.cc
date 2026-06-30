@@ -3,9 +3,9 @@
 //********************************************************
 
 #include "DTRDPoint_factory.h"
-
 #include <JANA/JEvent.h>
 #include "DANA/DGeometryManager.h"
+#include "DANA/DEvent.h"
 
 ///
 /// DTRDPoint_cmp(): 
@@ -21,15 +21,22 @@ bool DTRDPoint_cmp(const DTRDPoint* a, const DTRDPoint *b){
 //------------------
 void DTRDPoint_factory::Init()
 {
-	auto app = GetApplication();
+  auto app = GetApplication();
   
   // Some parameters for defining matching
-  TIME_DIFF_MAX = 50.;
-//   DIST_DIFF_MAX = 10.;
-  //DE_DIFF_MAX = 1.0;
+  DRIFT_VELOCITY=0.0033; // cm/ns //Estimate - Will need changed later
 
-  app->SetDefaultParameter("TRDPOINT:TIME_DIFF_MAX",TIME_DIFF_MAX);
-//   app->SetDefaultParameter("TRDPOINT:DIST_DIFF_MAX",DIST_DIFF_MAX);
+  TIME_DIFF_MAX = 25.;
+  app->SetDefaultParameter("TRDPOINT:XY_TIME_DIFF",TIME_DIFF_MAX);
+	
+  dE_DIFF_MAX = 10000.;
+  app->SetDefaultParameter("TRDPOINT:dE_DIFF_MAX",dE_DIFF_MAX,
+			   "Difference between Point charge in X and Y planes to be considered a coincidence (default: 10000.)");
+
+  MIN_NClusters = 1;
+  app->SetDefaultParameter("TRDPOINT:MIN_NClusters", MIN_NClusters,
+			   "Minimum number of clusters in a plane (default: 1)");
+  
 }
 
 
@@ -38,22 +45,38 @@ void DTRDPoint_factory::Init()
 //------------------
 void DTRDPoint_factory::BeginRun(const std::shared_ptr<const JEvent>& event)
 {
+	map<string,string> installed;
+	DEvent::GetCalib(event, "/TRD/install_status", installed);
+	if(atoi(installed["status"].data()) == 0)
+		INSTALLED = false;
+	else
+		INSTALLED = true;
+		
+	if(!INSTALLED) return;
+
   auto runnumber = event->GetRunNumber();
   auto app = event->GetJApplication();
   auto geo_manager = app->GetService<DGeometryManager>();
   auto dgeom = geo_manager->GetDGeometry(runnumber);
 
   // Get GEM geometry from xml (CCDB or private HDDS)
-  dgeom->GetTRDZ(dTRDz);
+  dgeom->GetGEMTRDz(dTRDz);
+
+  vector<double>xvec,yvec;
+  if(dgeom->GetGEMTRDxy_vec(xvec,yvec)){
+    dTRDx=xvec[0];
+    dTRDy=yvec[0];
+  }
 
   return;
 }
 
 void DTRDPoint_factory::EndRun(){
 }
+
 ///
-/// DTRDPoint_factory::evnt():
-/// this is the place that produces points from wire hits and GEM strips
+/// DTRDPoint_factory::Process():
+/// this is the place that produces points from strips
 ///
 void DTRDPoint_factory::Process(const std::shared_ptr<const JEvent>& event) 
 {
@@ -61,11 +84,11 @@ void DTRDPoint_factory::Process(const std::shared_ptr<const JEvent>& event)
 	// Get strip clusters
 	vector<const DTRDStripCluster*> stripClus;
 	event->Get(stripClus);
+	if (stripClus.size()==0) return;
 
-//     cout << "DTRDPoint_factory::Process() ..." << endl;
-//     cout << "  num input clusters = " << stripClus.size() << endl;
+    // if (stripClus.size() > 10) cout << "DTRDPoint_factory::Process() ... num input clusters = " << stripClus.size() << endl;
 
-	// Sift through clusters and select out X and Y plane wires
+	// Sift through clusters and select out X and Y plane strips
 	vector<const DTRDStripCluster*> stripClusX,stripClusY;
 	for (unsigned int i=0; i < stripClus.size(); i++) {
 		// TODO: make some enums so it's more clear what plane 1 and 2 are...
@@ -75,38 +98,80 @@ void DTRDPoint_factory::Process(const std::shared_ptr<const JEvent>& event)
 			stripClusY.push_back(stripClus[i]);
 	}
 
+	if ((int)stripClusX.size() < MIN_NClusters || (int)stripClusY.size() < MIN_NClusters) {
+		// cout << "DTRDPoint_factory::Process() ... not enough clusters in one of the planes, skipping event" << endl;
+		return; // skip this event if not enough clusters
+	}
 	
-	// match clusters in X and Y planes
-	for(uint i=0; i<stripClusX.size(); i++){
-		for(uint j=0; j<stripClusY.size(); j++){
+	PointCandidates pointCandidates;
+	for (const auto &clusX : stripClusX) pointCandidates.AddClusterX(clusX, false, -1);
+	for (const auto &clusY : stripClusY) pointCandidates.AddClusterY(clusY, false, -1);
 	
-			// calculate strip cluster time and position
-			double t_diff = stripClusX[i]->t_avg - stripClusY[j]->t_avg;
-			double dE = stripClusX[i]->q_tot + stripClusY[j]->q_tot;
+	MatchClusters(pointCandidates);
+	// cout << GetNUnmatchedClusters(pointCandidates) << " unmatched clusters found in this event." << endl;
+	// cout << dTRDx << " " << dTRDy << " " << dTRDz << endl;
 
-			// some requirements for a good point
-			if(fabs(t_diff) < TIME_DIFF_MAX) {   // && fabs(dE_amp_diff) <gem_dE_max) {
-		
-				// save new point
-				DTRDPoint* newPoint = new DTRDPoint;     
-				newPoint->x = stripClusX[i]->pos.x();
-				newPoint->y = stripClusY[j]->pos.x();
-				newPoint->t_x = stripClusX[i]->t_avg;
-				newPoint->t_y = stripClusY[j]->t_avg;
-				newPoint->time = (stripClusX[i]->t_avg*stripClusX[i]->q_tot + stripClusY[j]->t_avg*stripClusY[j]->q_tot) / dE;
+	for (const auto &clusX : pointCandidates.clustersX) {
+		for (const auto &clusY : pointCandidates.clustersY) {
+			if (clusX.matched && clusY.matched && clusX.pointID == clusY.pointID) {
+				// Create a new point from matched clusters
+				DTRDPoint* newPoint = new DTRDPoint;
+				newPoint->x = dTRDx + clusX.clus->pos.x();
+				newPoint->y = dTRDy + clusY.clus->pos.y();
+				newPoint->t_x = clusX.clus->t_avg;
+				newPoint->t_y = clusY.clus->t_avg;
+				double dE = clusX.clus->q_tot + clusY.clus->q_tot;
+				newPoint->time = (clusX.clus->t_avg * clusX.clus->q_tot + clusY.clus->t_avg * clusY.clus->q_tot) / dE;
 				newPoint->dE = dE;
+				newPoint->dE_x = clusX.clus->q_tot;
+				newPoint->dE_y = clusY.clus->q_tot;
 				newPoint->status = 1;
-				//newPoint->itrack = 0;
-				//newPoint->z = (stripClusX[i]->pos.z()*stripClusX[i]->q_tot + stripClusY[j]->pos.z()*stripClusY[j]->q_tot) / dE + dTRDz[0];
-				newPoint->z = (stripClusX[i]->pos.z()*stripClusX[i]->q_tot + stripClusY[j]->pos.z()*stripClusY[j]->q_tot) / dE;  // FOR TESTING
+				newPoint->z = dTRDz - DRIFT_VELOCITY * newPoint->time;
 
-				newPoint->AddAssociatedObject(stripClusX[i]);
-				newPoint->AddAssociatedObject(stripClusY[j]);
+				newPoint->AddAssociatedObject(clusX.clus);
+				newPoint->AddAssociatedObject(clusY.clus);
+
+				newPoint->AssociatedStripClusters.push_back(clusX.clus);
+				newPoint->AssociatedStripClusters.push_back(clusY.clus);
 
 				Insert(newPoint);
 			}
 		}
 	}
+	// for(uint i=0; i<stripClusX.size(); i++){
+	// 	for(uint j=0; j<stripClusY.size(); j++){
+	
+	// 		// calculate strip cluster time and position
+	// 		// double t_diff = stripClusX[i]->t_avg - stripClusY[j]->t_avg;
+	// 		// double dE = stripClusX[i]->q_tot + stripClusY[j]->q_tot;
+
+    //         // some requirements for a good point
+	// 		// if(fabs(t_diff) < TIME_DIFF_MAX) {
+    //         // if(fabs(t_diff) < TIME_DIFF_MAX && (stripClusY[j]->q_tot < dE_high) && (stripClusY[j]->q_tot > dE_low )) {
+			
+	// 			// save new point
+	// 			DTRDPoint* newPoint = new DTRDPoint;     
+	// 			newPoint->x = dTRDx+stripClusX[i]->pos.x();
+	// 			newPoint->y = dTRDy+stripClusY[j]->pos.y();
+	// 			newPoint->t_x = stripClusX[i]->t_avg;
+	// 			newPoint->t_y = stripClusY[j]->t_avg;
+	// 			newPoint->time = (stripClusX[i]->t_avg*stripClusX[i]->q_tot + stripClusY[j]->t_avg*stripClusY[j]->q_tot) / dE;
+	// 			newPoint->dE = dE;
+	// 			newPoint->dE_x = stripClusX[i]->q_tot;
+	// 			newPoint->dE_y = stripClusY[j]->q_tot;
+	// 			newPoint->status = 1;
+	// 			//newPoint->itrack = 0;
+	// 			//newPoint->z = (stripClusX[i]->pos.z()*stripClusX[i]->q_tot + stripClusY[j]->pos.z()*stripClusY[j]->q_tot) / dE + dTRDz[0];
+	// 			//newPoint->z = dTRDz+(stripClusX[i]->pos.z()*stripClusX[i]->q_tot + stripClusY[j]->pos.z()*stripClusY[j]->q_tot) / dE;  // FOR TESTING
+	// 			newPoint->z=dTRDz-DRIFT_VELOCITY*newPoint->time;
+
+	// 			newPoint->AddAssociatedObject(stripClusX[i]);
+	// 			newPoint->AddAssociatedObject(stripClusY[j]);
+
+	// 			Insert(newPoint);
+	// 		}
+	// 	}
+	// }
 
 	// Make sure the data are both time- and z-ordered
 	std::sort(mData.begin(),mData.end(),DTRDPoint_cmp);

@@ -11,7 +11,9 @@
 #include "DTRDStripCluster_factory.h"
 #include "DTRDStripCluster_factory_RAW.h"
 #include "DTRDPoint_factory.h"
+#include "DTRDPoint_factory_Hit.h"
 #include "DTRDSegment_factory.h"
+#include "DTRDSegment_factory_extrapolation.h"
 
 #include <JANA/JFactorySet.h>
 #include <JANA/JFactoryT.h>
@@ -27,7 +29,9 @@ void TRD_init(JFactorySet *factorySet)
 	factorySet->Add(new DTRDStripCluster_factory());
 	factorySet->Add(new DTRDStripCluster_factory_RAW());
 	factorySet->Add(new DTRDPoint_factory());
+	factorySet->Add(new DTRDPoint_factory_Hit());
 	factorySet->Add(new DTRDSegment_factory());
+	factorySet->Add(new DTRDSegment_factory_extrapolation());
 
 }
 

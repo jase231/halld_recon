@@ -4,6 +4,7 @@ Import('*')
 subdirs = [
 'occupancy_online',
 'lowlevel_online',
+'bad_hits',
 'BCAL_online',
 'CCAL_online',
 'CDC_dedx',
@@ -11,6 +12,7 @@ subdirs = [
 'CDC_roc_hits',
 'DAQ_online',
 'fa125_itrig',
+'fa125_temp',
 'FCAL_online',
 'FCAL_invmass',
 'FDC_online',
@@ -42,6 +44,7 @@ subdirs = [
 'FCAL_Hadronic_Eff',
 'TrackingPulls',
 'DIRC_online',
+'TRD_online',
 'BEAM_online',
 'lumi_mon',
 'HELI_online' 
@@ -50,7 +53,7 @@ subdirs = [
 
 optdirs = ['TAGH_doubles','ST_ZEff', 'CODA_online', 'EVNT_online']
 optdirs.extend(['BCAL_LED_time', 'BCAL_LED', 'FCAL_cpp', 'pedestal_online', 'CDC_PerStrawReco' ])
-optdirs.extend(['EPICS_dump', 'SC_Eff','TOF_Eff', 'TS_scaler', 'TrackingPulls_straight', 'timing_online', 'TRD_online' ])
+optdirs.extend(['EPICS_dump', 'SC_Eff','TOF_Eff', 'TS_scaler', 'TrackingPulls_straight', 'timing_online' ])
 optdirs.extend(['RSAI_KO', 'scaler_primex', 'cppFMWPC', 'cppFMWPC_ana', 'cpp_itrig', 'primex-online' ])
 sbms.OptionallyBuild(env, optdirs)
 

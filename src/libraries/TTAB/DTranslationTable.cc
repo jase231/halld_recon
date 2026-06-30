@@ -275,6 +275,7 @@ std::set<uint32_t> DTranslationTable::GetSystemsToParse(string systems, int syst
 		rocid_map[name_to_id[         "CDC"]] = {25, 26, 27, 28};
 		rocid_map[name_to_id[        "FCAL"]] = {11, 12, 13, 14 ,15, 16, 17, 18, 19, 20, 21, 22};
 		rocid_map[name_to_id[        "ECAL"]] = {111, 112, 113, 114 ,115, 116, 117};
+		rocid_map[name_to_id[        "ECAL_REF"]] = {114};
 		rocid_map[name_to_id["FDC_CATHODES"]] = {52, 53, 55, 56, 57, 58, 59, 60, 61, 62};
 		rocid_map[name_to_id[   "FDC_WIRES"]] = {51, 54, 63, 64};
 		rocid_map[name_to_id[          "PS"]] = {83, 84};
@@ -397,6 +398,7 @@ void DTranslationTable::ApplyTranslationTable(const std::shared_ptr<const JEvent
          case BCAL:       MakeBCALDigiHit(chaninfo.bcal, pi, pt, pp);              break;
          case FCAL:       MakeFCALDigiHit(chaninfo.fcal, pi, pt, pp);              break;
          case ECAL:       MakeECALDigiHit(chaninfo.ecal, pi, pt, pp);              break;
+         case ECAL_REF:   MakeECALRefDigiHit(chaninfo.ecal_ref, pi, pt, pp);       break;
          case CCAL:       MakeCCALDigiHit(chaninfo.ccal, pi, pt, pp);              break;
          case CCAL_REF:   MakeCCALRefDigiHit(chaninfo.ccal_ref, pi, pt, pp);       break;
          case SC:         MakeSCDigiHit(  chaninfo.sc, pi, pt, pp);                break;
@@ -444,6 +446,7 @@ void DTranslationTable::ApplyTranslationTable(const std::shared_ptr<const JEvent
          case BCAL:       MakeBCALDigiHit( chaninfo.bcal, pd);             break;
          case FCAL:       MakeFCALDigiHit( chaninfo.fcal, pd);             break;
          case ECAL:       MakeECALDigiHit( chaninfo.ecal, pd);             break;
+         case ECAL_REF:   MakeECALRefDigiHit( chaninfo.ecal_ref, pd);      break;
          case CCAL:       MakeCCALDigiHit( chaninfo.ccal, pd);             break;
          case CCAL_REF:   MakeCCALRefDigiHit( chaninfo.ccal_ref, pd);      break;	   
          case SC:         MakeSCDigiHit(   chaninfo.sc,   pd);             break;
@@ -778,6 +781,7 @@ void DTranslationTable::ApplyTranslationTable(const std::shared_ptr<const JEvent
       	Addf250ObjectsToCallStack(*event, "DBCALDigiHit");
       	Addf250ObjectsToCallStack(*event, "DFCALDigiHit");
       	Addf250ObjectsToCallStack(*event, "DECALDigiHit");
+	Addf250ObjectsToCallStack(*event, "DECALRefDigiHit");
       	Addf250ObjectsToCallStack(*event, "DCCALDigiHit");
       	Addf250ObjectsToCallStack(*event, "DCCALRefDigiHit");
       	Addf250ObjectsToCallStack(*event, "DSCDigiHit");
@@ -869,6 +873,21 @@ DECALDigiHit* DTranslationTable::MakeECALDigiHit(const ECALIndex_t &idx,
    return h;
 }
 
+//---------------------------------
+// MakeECALRefDigiHit
+//---------------------------------
+DECALRefDigiHit* DTranslationTable::MakeECALRefDigiHit(const ECALRefIndex_t &idx,
+                                                 const Df250PulseData *pd) const
+{
+   DECALRefDigiHit *h = new DECALRefDigiHit();
+   CopyDf250Info(h, pd);
+
+   h->id     = idx.id;
+
+   vDECALRefDigiHit.push_back(h);
+   
+   return h;
+}
 
 
 //---------------------------------
@@ -1108,6 +1127,24 @@ DECALDigiHit* DTranslationTable::MakeECALDigiHit(const ECALIndex_t &idx,
    return h;
 }
 
+
+//---------------------------------
+// MakeECALRefDigiHit
+//---------------------------------
+DECALRefDigiHit* DTranslationTable::MakeECALRefDigiHit(const ECALRefIndex_t &idx,
+                                                 const Df250PulseIntegral *pi,
+                                                 const Df250PulseTime *pt,
+                                                 const Df250PulsePedestal *pp) const
+{
+   DECALRefDigiHit *h = new DECALRefDigiHit();
+   CopyDf250Info(h, pi, pt, pp);
+
+   h->id    = idx.id;
+
+   vDECALRefDigiHit.push_back(h);
+   
+   return h;
+}
 
 
 //---------------------------------
@@ -1424,7 +1461,7 @@ DFDCCathodeDigiHit* DTranslationTable::MakeFDCCathodeDigiHit(
    
 	return h;
 }
-
+/*
 //---------------------------------
 // MakeTRDDigiHit
 //---------------------------------
@@ -1439,6 +1476,7 @@ DTRDDigiHit* DTranslationTable::MakeTRDDigiHit(
 	h->pulse_time        = p->le_time;
 	h->pedestal          = p->pedestal;
 	h->QF                = p->time_quality_bit + (p->overflow_count<<1);
+	h->NPK				 = p->NPK;
 	h->nsamples_integral = p->nsamples_integral;
 	h->nsamples_pedestal = p->nsamples_pedestal;
 
@@ -1448,7 +1486,7 @@ DTRDDigiHit* DTranslationTable::MakeTRDDigiHit(
    
 	return h;
 }
-
+*/
 //---------------------------------
 // MakeTRDDigiHit
 //---------------------------------
@@ -1464,6 +1502,7 @@ DTRDDigiHit* DTranslationTable::MakeTRDDigiHit(
 	h->peak_time         = p->peak_time;
 	h->pedestal          = p->pedestal;
 	h->QF                = p->time_quality_bit + (p->overflow_count<<1);
+	h->NPK               = p->NPK;
 	h->nsamples_integral = p->nsamples_integral;
 	h->nsamples_pedestal = p->nsamples_pedestal;
 
@@ -1878,6 +1917,10 @@ const DTranslationTable::csc_t
              if ( det_channel.ecal == in_channel.ecal ) 
                 found = true;
              break;
+          case DTranslationTable::ECAL_REF:
+             if ( det_channel.ecal_ref == in_channel.ecal_ref ) 
+                found = true;
+             break;	     
           case DTranslationTable::CCAL:
              if ( det_channel.ccal == in_channel.ccal ) 
                 found = true;
@@ -1992,6 +2035,9 @@ string DTranslationTable::Channel2Str(const DChannelInfo &in_channel) const
     case DTranslationTable::ECAL:
        ss << "row = " << in_channel.ecal.row << " column = " << in_channel.ecal.col;
        break;
+    case DTranslationTable::ECAL_REF:
+       ss << "id = " << in_channel.ecal_ref.id << " id = " << in_channel.ecal_ref.id;
+       break;       
     case DTranslationTable::CCAL:
        ss << "row = " << in_channel.ccal.row << " column = " << in_channel.ccal.col;
        break;
@@ -2322,6 +2368,8 @@ DTranslationTable::Detector_t DetectorStr2DetID(string &type)
       return DTranslationTable::FCAL;
    } else if ( type == "ecal" ) {
      return DTranslationTable::ECAL;
+   } else if ( type == "ecal_ref" ) {
+     return DTranslationTable::ECAL_REF;
    } else if ( type == "ccal" ) {
       return DTranslationTable::CCAL;
    } else if ( type == "ccal_ref" ) {
@@ -2579,6 +2627,9 @@ void StartElement(void *userData, const char *xmlname, const char **atts)
             ci.ecal.row = row;
             ci.ecal.col = column;
             break;
+         case DTranslationTable::ECAL_REF:
+	    ci.ecal_ref.id = id;
+	    break;  
          case DTranslationTable::CCAL:
             ci.ccal.row = row;
             ci.ccal.col = column;

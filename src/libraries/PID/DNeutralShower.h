@@ -40,15 +40,20 @@ class DNeutralShower : public JObject
   // in the FCAL.  Quality = 1 for all BCAL showers.
 
   double dQuality;
-  
+
+  int dTOF_ECAL_match;
   int dTOF_FCAL_match;
+  int dSC_ECAL_match;
   int dSC_FCAL_match;
   int dSC_BCAL_match;
+  float dTOF_ECAL_x_min;
+  float dTOF_ECAL_y_min;
   float dTOF_FCAL_x_min;
   float dTOF_FCAL_y_min;
   float dSC_BCAL_phi_min;
+  float dSC_ECAL_phi_min;
   float dSC_FCAL_phi_min;
-  
+
   const JObject* dBCALFCALShower; //is either DBCALShower or DFCALShower: dynamic_cast as appropriate (based on dDetectorSystem)
 
   void Summarize(JObjectSummary& summary) const override {
@@ -57,6 +62,7 @@ class DNeutralShower : public JObject
     summary.add(dSpacetimeVertex.Y(), "y", "%3.2f");
     summary.add(dSpacetimeVertex.Z(), "z", "%3.2f");
     summary.add(dSpacetimeVertex.T(), "t", "%3.2f");
+    summary.add(SystemName(dDetectorSystem), "Detector", "%s");
   }
 };
 

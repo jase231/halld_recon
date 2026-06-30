@@ -26,7 +26,7 @@ void JEventProcessor_RF_online::Init()
 	//This constant should be fixed for the lifetime of GlueX.  If it ever changes, move it into the CCDB.
 	dRFSignalPeriod = 1000.0/499.0; //2.004008016
 	double locDeltaTRangeMax = 2.2;
-	unsigned int locNumDeltaTBins = 1100;
+	unsigned int locNumDeltaTBins = 79;
 
 	dRFSignalSystems.push_back(SYS_FDC);  dRFSignalSystems.push_back(SYS_PSC);
 	dRFSignalSystems.push_back(SYS_TAGH);  dRFSignalSystems.push_back(SYS_TOF);
@@ -242,7 +242,6 @@ void JEventProcessor_RF_online::BeginRun(const std::shared_ptr<const JEvent> &lo
 {
 	// This is called whenever the run number changes
 
-    // TODO: NWB: Excise all uses of brun_was_called and Set_brun_called from codebase
 }
 
 void JEventProcessor_RF_online::Process(const std::shared_ptr<const JEvent> &locEvent)
@@ -259,8 +258,9 @@ void JEventProcessor_RF_online::Process(const std::shared_ptr<const JEvent> &loc
 	vector<const DTAGHHit*> locTAGHHits;
 	locEvent->Get(locTAGHHits);
 
-	auto dRFTimeFactory = static_cast<DRFTime_factory*>(locEvent->GetFactory("DRFTime", ""));
-
+	vector<const DRFTime*> rftimes;
+	auto dRFTimeFactory = static_cast<DRFTime_factory*>( locEvent->Get(rftimes) );
+	
 	//Convert TDCs to Times
 	//Use std::set: times are NOT necessarily in order (for high-resolution mode, times interleaved between different internal channels)
 	map<DetectorSystem_t, set<double> > locRFTimes;

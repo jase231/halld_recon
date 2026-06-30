@@ -28,7 +28,9 @@ class JEventSource_EVIOpp;
 
 class DEVIOWorkerThread{
 	public:
-			
+  int PrintLimitFDC;
+  int PrintLimitCDC;
+  
 		enum JOBTYPE{
 			JOB_NONE       = 0x0,
 			JOB_QUIT       = 0x1,
@@ -81,7 +83,6 @@ class DEVIOWorkerThread{
 		streampos pos;
 
 		bool  PARSE_F250;
-		bool  SKIP_F250_FORMAT_ERROR;
 		bool  PARSE_F125;
 		bool  PARSE_F1TDC;
 		bool  PARSE_CAEN1290TDC;
@@ -92,6 +93,7 @@ class DEVIOWorkerThread{
 		bool  PARSE_TRIGGER;
 		bool  PARSE_SSP;
 		bool  PARSE_GEMSRS;
+		bool  PARSE_HELICITY;
                 int   NSAMPLES_GEMSRS;
 
 		bool  LINK_TRIGGERTIME;
@@ -130,6 +132,9 @@ class DEVIOWorkerThread{
 		void               ParseSSPBank(uint32_t rocid, uint32_t* &iptr, uint32_t *iend);
 		void           ParseDGEMSRSBank(uint32_t rocid, uint32_t* &iptr, uint32_t *iend);
 		void   MakeDGEMSRSWindowRawData(DParsedEvent *pe, uint32_t rocid, uint32_t slot, uint32_t itrigger, uint32_t apv_id, vector<int>rawData16bits);
+                void   ParseHelicityDecoderBank(uint32_t rocid, uint32_t* &iptr, uint32_t *iend);
+  
+                void   ParseUnknownBank(uint32_t rocid, uint32_t* &iptr, uint32_t *iend);
 
 		void LinkAllAssociations(void);
 
@@ -137,7 +142,7 @@ class DEVIOWorkerThread{
 
 
 		void DumpBinary(const uint32_t *iptr, const uint32_t *iend, uint32_t MaxWords=0, const uint32_t *imark=NULL);
-
+                void ClearBadDataFormatEventTriggers(DParsedEvent *pe);  
 	protected:
 	
 	
