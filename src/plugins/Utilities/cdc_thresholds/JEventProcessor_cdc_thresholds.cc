@@ -75,7 +75,7 @@ void JEventProcessor_cdc_thresholds::BeginRun(const std::shared_ptr<const JEvent
 void JEventProcessor_cdc_thresholds::Process(const std::shared_ptr<const JEvent> &event)
 {
 
-  //if (thresholds[0] > 0) return;
+    if (thresholds_found) return;
 
     //add extra 0 at front to use offset[1] for ring 1
     uint straw_offset[29] = {0,0,42,84,138,192,258,324,404,484,577,670,776,882,1005,1128,1263,1398,1544,1690,1848,2006,2176,2346,2528,2710,2907,3104,3313};
@@ -159,6 +159,7 @@ void JEventProcessor_cdc_thresholds::Finish()
         myfile = fopen(filename,"w");
         for (uint i=0; i<3522; i++)  fprintf(myfile,"%i\n",thresholds[i]);
         fclose(myfile);
+	cout << "CDC thresholds written to " << filename << endl;
     } else {
         cout << "Threshold file not created because Df125BORConfig was not found\n" << endl;
     }
