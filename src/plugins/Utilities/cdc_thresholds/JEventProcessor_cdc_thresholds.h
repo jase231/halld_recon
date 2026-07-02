@@ -13,8 +13,6 @@
 #include <JANA/JEventProcessor.h>
 // #include <JANA/Services/JLockService.h> // Required for accessing services
 
-#include "DAQ/Df125CDCPulse.h"
-#include "DAQ/Df125WindowRawData.h"
 #include "DAQ/Df125BORConfig.h"
 #include "DAQ/bor_roc.h"
 #include <TTAB/DTranslationTable.h>
@@ -34,6 +32,8 @@ class JEventProcessor_cdc_thresholds:public JEventProcessor{
 
         const DTranslationTable* ttab;
         uint thresholds[3522];
+        bool thresholds_found;
+        uint64_t run_number;
     	// std::shared_ptr<JLockService> lockService; //Used to access all the services, its value should be set inside Init()
 };
 
