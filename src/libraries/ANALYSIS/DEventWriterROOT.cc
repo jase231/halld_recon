@@ -1188,22 +1188,33 @@ void DEventWriterROOT::Fill_ThrownTree(const std::shared_ptr<const JEvent>& locE
 	vector<const DMCTrajectoryPoint*> locDMCTrajectoryPoints;
 	locEvent->Get(locDMCTrajectoryPoints);
 
-	const DBeamPhoton* locTaggedMCGenBeam = locTaggedMCGenBeams.empty() ? locMCGenBeams[0] : locTaggedMCGenBeams[0]; //if empty: will have to do. 
+	//if empty: will have to do.
+	//Otherwise, write one row per TAGGEDMCGEN entry instead of collapsing to locTaggedMCGenBeams[0]:
+	//in TAGH/TAGM overlap regions TAGGEDMCGEN correctly holds one entry per truth-tagged system
+	//(mirroring DBeamPhoton_factory_TRUTH), and the reconstructed side is likewise left un-merged,
+	//so collapsing the thrown side to a single row would undercount the "thrown" denominator
+	//relative to the (correctly doubled) reconstructed numerator in any analysis that divides by
+	//this tree's row count instead of querying DBeamPhoton:TAGGEDMCGEN object counts directly.
+	vector<const DBeamPhoton*> locThrownTreeBeams = locTaggedMCGenBeams.empty() ?
+		vector<const DBeamPhoton*>(1, locMCGenBeams[0]) : locTaggedMCGenBeams;
 
 	DEvent::GetLockService(locEvent)->RootWriteLock();
 
-	//primary event info
-	dThrownTreeFillData.Fill_Single<UInt_t>("RunNumber", locEvent->GetRunNumber());
-	dThrownTreeFillData.Fill_Single<ULong64_t>("EventNumber", locEvent->GetEventNumber());
+	for(const DBeamPhoton* locTaggedMCGenBeam : locThrownTreeBeams)
+	{
+		//primary event info
+		dThrownTreeFillData.Fill_Single<UInt_t>("RunNumber", locEvent->GetRunNumber());
+		dThrownTreeFillData.Fill_Single<ULong64_t>("EventNumber", locEvent->GetEventNumber());
 
-	//throwns
-	Fill_ThrownInfo(&dThrownTreeFillData, locMCReaction, locTaggedMCGenBeam, locMCThrownsToSave, locThrownIndexMap, locNumPIDThrown_FinalState, locPIDThrown_Decaying, locDMCTrajectoryPoints);
+		//throwns
+		Fill_ThrownInfo(&dThrownTreeFillData, locMCReaction, locTaggedMCGenBeam, locMCThrownsToSave, locThrownIndexMap, locNumPIDThrown_FinalState, locPIDThrown_Decaying, locDMCTrajectoryPoints);
 
-	//Custom Branches
-	Fill_CustomBranches_ThrownTree(&dThrownTreeFillData, locEvent, locMCReaction, locMCThrownsToSave);
+		//Custom Branches
+		Fill_CustomBranches_ThrownTree(&dThrownTreeFillData, locEvent, locMCReaction, locMCThrownsToSave);
 
-	//FILL TTREE
-	dThrownTreeInterface->Fill(dThrownTreeFillData);
+		//FILL TTREE
+		dThrownTreeInterface->Fill(dThrownTreeFillData);
+	}
 
 	
 	DEvent::GetLockService(locEvent)->RootUnLock();
