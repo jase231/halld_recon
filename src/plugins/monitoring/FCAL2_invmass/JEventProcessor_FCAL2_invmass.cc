@@ -55,7 +55,7 @@ void JEventProcessor_FCAL2_invmass::Init()
   
   gDirectory->mkdir("FCAL2_invmass")->cd();
   h_2gamma_ECAL_ECAL=new TH1F("h_2gamma_ECAL_ECAL","ECAL+ECAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   h_2gamma_ECAL_ECAL_vs_E=new TH2F("h_2gamma_ECAL_ECAL_vs_E","ECAL+ECAL;E [GeV];m(2#gamma) [GeV]",
 			      30,-0.1,5.9,500,0,1);
   h_Epred_ECAL_ECAL_vs_E=new TH2F("h_Epred_ECAL_ECAL_vs_E","ECAL+ECAL;E [GeV];E{{pred}(2#gamma) [GeV]",
@@ -63,12 +63,12 @@ void JEventProcessor_FCAL2_invmass::Init()
   h_2gamma_ECAL_ECAL_vs_ch=new TH2F("h_2gamma_ECAL_ECAL_vs_ch","ECAL+ECAL;channel;m(2#gamma) [GeV]",
 				    1600,-0.5,1599.5,100,0.08,0.18);
   h_2gamma_ECAL_FCAL=new TH1F("h_2gamma_ECAL_FCAL","ECAL+FCAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   h_2gamma_ECAL_FCAL_vs_E=new TH2F("h_2gamma_ECAL_FCAL_vs_E","ECAL+FCAL;E [GeV];m(2#gamma) [GeV]",
 			      30,-0.1,5.9,500,0,1);
  
   h_2gamma_FCAL_FCAL=new TH1F("h_2gamma_FCAL_FCAL","FCAL+FCAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   h_2gamma_FCAL_FCAL_vs_E=new TH2F("h_2gamma_FCAL_FCAL_vs_E","FCAL+FCAL;E [GeV];m(2#gamma) [GeV]",
 			      30,-0.1,5.9,500,0,1);
   h_Epred_FCAL_FCAL_vs_E=new TH2F("h_Epred_FCAL_FCAL_vs_E","FCAL+FCAL;E [GeV];E{{pred}(2#gamma) [GeV]",
@@ -76,11 +76,11 @@ void JEventProcessor_FCAL2_invmass::Init()
   h_2gamma_FCAL_FCAL_vs_ch=new TH2F("h_2gamma_FCAL_FCAL_vs_ch","FCAL+FCAL;channel;m(2#gamma) [GeV]",
 				    2800,-0.5,2799.5,100,0.08,0.18);
   h_2gamma_BCAL_BCAL=new TH1F("h_2gamma_BCAL_BCAL","BCAL+BCAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   h_2gamma_BCAL_ECAL=new TH1F("h_2gamma_BCAL_ECAL","BCAL+ECAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   h_2gamma_BCAL_FCAL=new TH1F("h_2gamma_BCAL_FCAL","BCAL+FCAL;m(2#gamma) [GeV]",
-			      1000,0,1);
+			      500,0,1);
   gDirectory->cd("../");
 
   lockService->RootUnLock();
