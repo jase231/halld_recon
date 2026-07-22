@@ -72,7 +72,7 @@
     pt2->AddText(Form("#sigma/M = %.3f %%",sigma/mean*100));
     pt2->Draw();
   }
-  TH1F *h3=(TH1F*)_file0->FindObjectAny("h_2gamma_BCAL_BCAL");
+  TH1F *h3=(TH1F*)gDirectory->FindObjectAny("h_2gamma_BCAL_BCAL");
   if (h3){
     c1->cd(3);
     f1->SetParameter(1,0.135);
