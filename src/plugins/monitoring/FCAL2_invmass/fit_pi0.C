@@ -8,7 +8,7 @@
   
   TCanvas *c1=NULL;
   if(gPad == NULL){
-    c1=new TCanvas("c1","Two photon mass distributions",1920,960);
+    c1=new TCanvas("c1","Two photon mass distributions",900,600);
     c1->cd(0);
     c1->Draw();
     c1->Update();
