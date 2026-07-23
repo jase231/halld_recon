@@ -2,7 +2,7 @@
 // hnamepath:  /FCAL2_invmass/h_2gamma_FCAL_FCAL
 // hnamepath:  /FCAL2_invmass/h_2gamma_BCAL_BCAL
 {
-  TDirectory *dir = (TDirectory*)gDirectory->FindObjectAny("bcal_inv_mass");
+  TDirectory *dir = (TDirectory*)gDirectory->FindObjectAny("FCAL2_invmass");
   if(dir) dir->cd();
   else return;
   
