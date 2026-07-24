@@ -2,13 +2,13 @@
 // hnamepath:  /FCAL2_invmass/h_2gamma_FCAL_FCAL
 // hnamepath:  /FCAL2_invmass/h_2gamma_BCAL_BCAL
 {
-  TDirectory *dir = (TDirectory*)gDirectory->FindObjectAny("bcal_inv_mass");
+  TDirectory *dir = (TDirectory*)gDirectory->FindObjectAny("FCAL2_invmass");
   if(dir) dir->cd();
   else return;
   
   TCanvas *c1=NULL;
   if(gPad == NULL){
-    c1=new TCanvas("c1","Two photon mass distributions",1920,960);
+    c1=new TCanvas("c1","Two photon mass distributions",900,600);
     c1->cd(0);
     c1->Draw();
     c1->Update();
@@ -72,7 +72,7 @@
     pt2->AddText(Form("#sigma/M = %.3f %%",sigma/mean*100));
     pt2->Draw();
   }
-  TH1F *h3=(TH1F*)_file0->FindObjectAny("h_2gamma_BCAL_BCAL");
+  TH1F *h3=(TH1F*)gDirectory->FindObjectAny("h_2gamma_BCAL_BCAL");
   if (h3){
     c1->cd(3);
     f1->SetParameter(1,0.135);
