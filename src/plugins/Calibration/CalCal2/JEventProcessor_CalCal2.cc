@@ -145,9 +145,8 @@ void JEventProcessor_CalCal2::BeginRun(const std::shared_ptr<const JEvent> &even
       ecal_counts.push_back(dummy);
     }
     DEvent::GetCalib(event, "/ECAL/gains", old_ecal_gains);
-    DEvent::GetCalib(event, "/ECAL/timing_offsets", ecal_times);
   }
-  DEvent::GetCalib(event, "/FCAL/timing_offsets", fcal_times);
+
   DEvent::GetCalib(event, "/FCAL/gains", old_fcal_gains);
   ifstream infile("fcal_gains.dat");
   for (size_t i=0;i<old_fcal_gains.size();i++){
@@ -162,20 +161,6 @@ void JEventProcessor_CalCal2::BeginRun(const std::shared_ptr<const JEvent> &even
     fcal_counts.push_back(dummy);
   }
   event->GetSingle(dFCALGeom);
-
-  DEvent::GetCalib(event, "/BCAL/gains", old_bcal_gains);
-  ifstream bcalinfile("bcal_gains.dat");
-  for (size_t i=0;i<1536/2;i++){
-    double dummy;
-    bcalinfile >> dummy;
-    bcal_gains.push_back(dummy);
-  }
-  ifstream bcalcountfile("bcal_counts.dat");
-  for (size_t i=0;i<1536/2;i++){
-    double dummy;
-    bcalcountfile >> dummy;
-    bcal_counts.push_back(dummy);
-  }
 }
 
 //------------------
