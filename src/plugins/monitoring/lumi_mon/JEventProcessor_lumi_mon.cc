@@ -150,6 +150,8 @@ void JEventProcessor_lumi_mon::Init()
   auto app = GetApplication();
   lockService = app->GetService<JLockService>();
 
+  app->SetDefaultParameter("lumi_mon:RFsrc", RFsrc, "Select the source of the RF signal: default PSC");
+  
   TDirectory *main = gDirectory;
   TDirectory *dlumi_mon = gDirectory->mkdir("Lumi_mon");
   dlumi_mon->cd();
@@ -288,7 +290,9 @@ void JEventProcessor_lumi_mon::Process(const std::shared_ptr<const JEvent> &even
 
 	// RF 
 	vector<const DRFTime*>   locRFTimes;
-	event->Get(locRFTimes, "PSC");
+
+      	event->Get(locRFTimes, RFsrc);
+	
 	const DRFTime* locRFTime = NULL;
 	
 	if (locRFTimes.size() > 0)
