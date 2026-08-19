@@ -35,6 +35,8 @@ class JEventProcessor_lumi_mon:public JEventProcessor{
 
 		std::shared_ptr<JLockService> lockService;
 
+                std::string RFsrc = "PSC";
+  
 };
 
 #endif // _JEventProcessor_lumi_mon_
