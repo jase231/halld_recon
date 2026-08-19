@@ -77,8 +77,7 @@ void DPSCPair_factory::Process(const std::shared_ptr<const JEvent>& event)
           	t2 = hits[j]->t;
           }
           
-          if ( (std::abs(hits[i]->arm-hits[j]->arm)==1&&fabs(t1-t2)<DELTA_T_PAIR_MAX)
-               || !USE_TDC_HITS || !USE_ADC_HITS ) {
+          if ( (std::abs(hits[i]->arm-hits[j]->arm)==1&&fabs(t1-t2)<DELTA_T_PAIR_MAX) ) {
               if (hits[i]->arm==0) {
                   ee.first = hits[i];
                   ee.second = hits[j];
